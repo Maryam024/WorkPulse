@@ -1,0 +1,13 @@
+Flask==2.3.3
+supabase==1.0.3
+python-dotenv==1.0.0
+pandas==2.0.3
+plotly==5.15.0
+easyocr==1.7.0
+pyautogui==0.9.54
+Pillow==10.0.0
+opencv-python==4.8.1.78
+pynput==1.7.6
+apscheduler
+resend
+schedule

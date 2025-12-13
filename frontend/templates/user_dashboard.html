@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Dashboard - WorkPulse</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            --warning-gradient: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            --info-gradient: linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%);
+            --danger-gradient: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            
+            --bg-light: #f8f9fa;
+            --bg-dark: #1a1a2e;
+            --card-light: #ffffff;
+            --card-dark: #16213e;
+            --text-light: #212529;
+            --text-dark: #f0f0f0;
+            --text-muted-light: #6c757d;
+            --text-muted-dark: #a0a0a0;
+            --border-light: #dee2e6;
+            --border-dark: #2d3748;
+        }
+
+        [data-bs-theme="dark"] {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        [data-bs-theme="light"] {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            overflow-x: hidden;
+            min-height: 100vh;
+            padding-bottom: 70px; /* Space for profile */
+        }
+
+        /* Main container */
+        .main-container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header area */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Stats Cards - Compact */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+        }
+
+        .stat-card {
+            border-radius: 10px;
+            border: none;
+            padding: 12px;
+            transition: all 0.2s ease;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            min-height: 80px;
+        }
+
+        [data-bs-theme="dark"] .stat-card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+        }
+
+        [data-bs-theme="dark"] .stat-card:hover {
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 100%;
+        }
+
+        .stat-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0 0 2px 0;
+            line-height: 1;
+        }
+
+        .stat-info h6 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 0;
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .stat-icon.productive { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+        .stat-icon.idle { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+        .stat-icon.total { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+
+        /* Main content area */
+        .content-area {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        @media (max-width: 992px) {
+            .content-area {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+        }
+
+        /* Charts */
+        .chart-section {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 15px;
+            height: 280px;
+        }
+
+        [data-bs-theme="dark"] .chart-section {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .chart-header h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            height: calc(100% - 30px);
+            width: 100%;
+            position: relative;
+        }
+
+        /* Productivity Gauge */
+        .productivity-section {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 15px;
+            height: 280px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        [data-bs-theme="dark"] .productivity-section {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .productivity-header {
+            margin-bottom: 10px;
+        }
+
+        .productivity-header h5 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .productivity-score-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        .productivity-score {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin: 5px 0;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .productivity-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin: 5px 0;
+        }
+
+        .badge-excellent { background: var(--success-gradient); color: white; }
+        .badge-good { background: var(--warning-gradient); color: white; }
+        .badge-poor { background: var(--danger-gradient); color: white; }
+
+        .gauge-container {
+            height: 120px;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        /* Profile section - Very small in bottom left */
+        .profile-section {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            padding: 8px 10px;
+            width: auto;
+            max-width: 200px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        [data-bs-theme="dark"] .profile-section {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .profile-info {
+            overflow: hidden;
+        }
+
+        .profile-info h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-info p {
+            margin: 0;
+            font-size: 0.7rem;
+            opacity: 0.7;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.6rem;
+            font-weight: 500;
+        }
+
+        @media (max-width: 576px) {
+            .profile-section {
+                bottom: 10px;
+                left: 10px;
+                padding: 6px 8px;
+                max-width: 160px;
+            }
+            
+            .profile-avatar {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+            
+            .profile-info h6 {
+                font-size: 0.75rem;
+            }
+            
+            .profile-info p {
+                font-size: 0.65rem;
+            }
+        }
+
+        /* Action buttons */
+        .theme-toggle-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: var(--card-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            transition: all 0.2s ease;
+        }
+
+        [data-bs-theme="dark"] .theme-toggle-btn {
+            border-color: var(--border-dark);
+            background: var(--card-dark);
+            color: var(--text-dark);
+        }
+
+        .theme-toggle-btn:hover {
+            transform: rotate(15deg);
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        /* Footer note */
+        .footer-note {
+            text-align: center;
+            padding: 10px;
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 15px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        [data-bs-theme="dark"] ::-webkit-scrollbar-track {
+            background: var(--border-dark);
+        }
+
+        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 2px;
+        }
+
+        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Tooltips */
+        [data-tooltip] {
+            position: relative;
+            cursor: help;
+        }
+
+        [data-tooltip]:hover::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--bg-dark);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            z-index: 1000;
+            margin-bottom: 4px;
+            pointer-events: none;
+        }
+
+        [data-bs-theme="dark"] [data-tooltip]:hover::after {
+            background: var(--card-light);
+            color: var(--text-light);
+        }
+
+        /* Loading indicator */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Content -->
+    <div class="main-container">
+        <!-- Header -->
+        <div class="dashboard-header fade-in">
+            <div class="header-title">
+                <h1>
+                    <i class="fas fa-chart-line me-2"></i>
+                    Productivity Dashboard
+                </h1>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggle" class="btn theme-toggle-btn" data-tooltip="Toggle theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                <a href="/logout" class="btn btn-outline-danger logout-btn">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Today's Stats - Compact -->
+        <div class="stats-grid fade-in">
+            <div class="stat-card" data-tooltip="Active work hours">
+                <div class="stat-card-content">
+                    <div class="stat-info">
+                        <h6>Productive</h6>
+                        <h3 id="productiveHours">{{ today_stats.productive_hours|round(1) if today_stats else '5.2' }}h</h3>
+                    </div>
+                    <div class="stat-icon productive">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card" data-tooltip="Inactive periods">
+                <div class="stat-card-content">
+                    <div class="stat-info">
+                        <h6>Idle</h6>
+                        <h3 id="idleHours">{{ today_stats.idle_hours|round(1) if today_stats else '1.3' }}h</h3>
+                    </div>
+                    <div class="stat-icon idle">
+                        <i class="fas fa-pause"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="stat-card" data-tooltip="Total work time">
+                <div class="stat-card-content">
+                    <div class="stat-info">
+                        <h6>Total</h6>
+                        <h3 id="totalHours">{{ (today_stats.productive_hours + today_stats.idle_hours)|round(1) if today_stats else '6.5' }}h</h3>
+                    </div>
+                    <div class="stat-icon total">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="content-area fade-in">
+            <!-- Weekly Activity Chart -->
+            <div class="chart-section">
+                <div class="chart-header">
+                    <h5>
+                        <i class="fas fa-calendar-week"></i>
+                        Weekly Activity
+                    </h5>
+                </div>
+                <div class="chart-container">
+                    <canvas id="weeklyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Productivity Score -->
+            <div class="productivity-section">
+                <div class="productivity-header">
+                    <h5>
+                        <i class="fas fa-tachometer-alt"></i>
+                        Today's Score
+                    </h5>
+                </div>
+                
+                <div class="productivity-score-container">
+                    {% set score = today_stats.productivity_score if today_stats else 80 %}
+                    {% if score >= 80 %}
+                        {% set badge_class = "badge-excellent" %}
+                        {% set badge_text = "Excellent" %}
+                    {% elif score >= 60 %}
+                        {% set badge_class = "badge-good" %}
+                        {% set badge_text = "Good" %}
+                    {% else %}
+                        {% set badge_class = "badge-poor" %}
+                        {% set badge_text = "Needs Improvement" %}
+                    {% endif %}
+                    
+                    <span class="productivity-badge {{ badge_class }}">
+                        {{ badge_text }}
+                    </span>
+                    
+                    <div class="productivity-score">{{ score|default(80) }}%</div>
+                    
+                    <div class="gauge-container">
+                        <canvas id="productivityGauge"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="footer-note fade-in">
+            <small>
+                <i class="fas fa-info-circle me-1"></i>
+                Data updates automatically • Reports sent weekly to manager
+            </small>
+        </div>
+    </div>
+
+    <!-- Tiny Profile Section - Bottom Left Corner -->
+    <div class="profile-section fade-in">
+        <div class="profile-avatar">
+            {{ user.name[0]|upper if user else 'J' }}
+        </div>
+        <div class="profile-info">
+            <h6>{{ user.name.split(' ')[0] if user else 'John' }}</h6>
+            <p>{{ user.email.split('@')[0] if user else 'employee' }}@...</p>
+        </div>
+        <span class="badge bg-primary profile-badge">EMP</span>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Check saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            updateThemeIcon(newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update charts when theme changes
+            setTimeout(() => {
+                createGaugeChart(score);
+                createWeeklyChart();
+            }, 100);
+        });
+
+        function updateThemeIcon(theme) {
+            themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // Initialize Charts
+        let productivityGauge, weeklyChart;
+        const score = {{ today_stats.productivity_score|default(80) }};
+
+        function createGaugeChart(score) {
+            const ctx = document.getElementById('productivityGauge');
+            
+            if (productivityGauge) {
+                productivityGauge.destroy();
+            }
+            
+            productivityGauge = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    datasets: [{
+                        data: [score, 100 - score],
+                        backgroundColor: [
+                            getScoreColor(score),
+                            getCurrentTheme() === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                        ],
+                        borderWidth: 0,
+                        borderRadius: 3,
+                        cutout: '75%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { enabled: false }
+                    },
+                    animation: {
+                        animateRotate: false,
+                        animateScale: true
+                    }
+                },
+                plugins: [{
+                    id: 'centerText',
+                    beforeDraw: function(chart) {
+                        const width = chart.width;
+                        const height = chart.height;
+                        const ctx = chart.ctx;
+                        
+                        ctx.restore();
+                        ctx.font = "bold 20px 'Segoe UI', Arial, sans-serif";
+                        ctx.fillStyle = getScoreColor(score);
+                        ctx.textBaseline = "middle";
+                        ctx.textAlign = "center";
+                        
+                        const text = score.toFixed(0) + '%';
+                        const textX = Math.round(width / 2);
+                        const textY = Math.round(height / 2);
+                        
+                        ctx.fillText(text, textX, textY);
+                        ctx.save();
+                    }
+                }]
+            });
+        }
+
+        function getScoreColor(score) {
+            if (score >= 80) return '#28a745';
+            if (score >= 60) return '#ffc107';
+            return '#dc3545';
+        }
+
+        function getCurrentTheme() {
+            return document.documentElement.getAttribute('data-bs-theme');
+        }
+
+        function createWeeklyChart() {
+            const ctx = document.getElementById('weeklyChart');
+            
+            // Sample data
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const productiveData = [5.2, 6.1, 4.8, 7.2, 6.5, 2.1, 1.0];
+            const idleData = [1.3, 0.8, 2.1, 0.7, 1.2, 0.5, 0.3];
+            
+            if (weeklyChart) {
+                weeklyChart.destroy();
+            }
+            
+            const isDark = getCurrentTheme() === 'dark';
+            
+            weeklyChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: days,
+                    datasets: [
+                        {
+                            label: 'Productive',
+                            data: productiveData,
+                            backgroundColor: isDark ? 'rgba(40, 167, 69, 0.8)' : 'rgba(40, 167, 69, 0.7)',
+                            borderColor: 'rgba(40, 167, 69, 1)',
+                            borderWidth: 0,
+                            borderRadius: 3,
+                            barPercentage: 0.5,
+                            categoryPercentage: 0.6
+                        },
+                        {
+                            label: 'Idle',
+                            data: idleData,
+                            backgroundColor: isDark ? 'rgba(255, 193, 7, 0.8)' : 'rgba(255, 193, 7, 0.7)',
+                            borderColor: 'rgba(255, 193, 7, 1)',
+                            borderWidth: 0,
+                            borderRadius: 3,
+                            barPercentage: 0.5,
+                            categoryPercentage: 0.6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                                drawBorder: false,
+                                lineWidth: 1
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529',
+                                font: {
+                                    size: 10
+                                },
+                                padding: 5,
+                                callback: function(value) {
+                                    return value + 'h';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 8,
+                                color: isDark ? '#f0f0f0' : '#212529',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            createGaugeChart(score);
+            createWeeklyChart();
+        });
+
+        // Auto-refresh stats every 30 seconds
+        setInterval(() => {
+            fetch('/user/api/dashboard')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.today_stats) {
+                        document.getElementById('productiveHours').textContent = 
+                            data.today_stats.productive_hours.toFixed(1) + 'h';
+                        document.getElementById('idleHours').textContent = 
+                            data.today_stats.idle_hours.toFixed(1) + 'h';
+                        document.getElementById('totalHours').textContent = 
+                            (data.today_stats.productive_hours + data.today_stats.idle_hours).toFixed(1) + 'h';
+                        
+                        // Update gauge if score changed
+                        if (data.today_stats.productivity_score !== score) {
+                            createGaugeChart(data.today_stats.productivity_score);
+                        }
+                    }
+                })
+                .catch(error => console.error('Error updating stats:', error));
+        }, 30000);
+    </script>
+</body>
+</html>

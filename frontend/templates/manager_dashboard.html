@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Dashboard - WorkPulse</title>
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            --warning-gradient: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            --info-gradient: linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%);
+            --danger-gradient: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            
+            --bg-light: #f8f9fa;
+            --bg-dark: #121826;
+            --card-light: #ffffff;
+            --card-dark: #1e293b;
+            --text-light: #2d3748;
+            --text-dark: #f7fafc;
+            --text-muted-light: #718096;
+            --text-muted-dark: #a0aec0;
+            --border-light: #e2e8f0;
+            --border-dark: #2d3748;
+            --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+        }
+
+        [data-bs-theme="dark"] {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        [data-bs-theme="light"] {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding-bottom: 70px; /* Space for profile */
+        }
+
+        /* Main Container */
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .dashboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        [data-bs-theme="dark"] .dashboard-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .header-title h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        /* KPI Cards with Icons */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        @media (max-width: 992px) {
+            .kpi-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 576px) {
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .kpi-card {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        [data-bs-theme="dark"] .kpi-card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-light);
+        }
+
+        [data-bs-theme="dark"] .kpi-card:hover {
+            box-shadow: var(--shadow-dark);
+        }
+
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .kpi-icon.total { background: rgba(102, 126, 234, 0.1); color: #667eea; }
+        .kpi-icon.active { background: rgba(40, 167, 69, 0.1); color: #28a745; }
+        .kpi-icon.idle { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
+        .kpi-icon.avg { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+
+        .kpi-content h3 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 0 5px 0;
+        }
+
+        .kpi-content p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: var(--text-muted-light);
+            font-weight: 500;
+        }
+
+        [data-bs-theme="dark"] .kpi-content p {
+            color: var(--text-muted-dark);
+        }
+
+        /* Main Content Grid - SWAPPED: Charts on left, Team on right */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 992px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Charts Sidebar - NOW ON LEFT */
+        .charts-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            padding: 20px;
+            flex: 1;
+        }
+
+        [data-bs-theme="dark"] .chart-card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .chart-header {
+            margin-bottom: 15px;
+        }
+
+        .chart-header h4 {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .chart-container {
+            height: 180px;
+            position: relative;
+        }
+
+        /* Team Table Card - NOW ON RIGHT */
+        .team-card {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        [data-bs-theme="dark"] .team-card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .team-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        [data-bs-theme="dark"] .team-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .team-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .team-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Table */
+        .team-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .team-table thead th {
+            padding: 15px 20px;
+            text-align: left;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted-light);
+            border-bottom: 1px solid var(--border-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        [data-bs-theme="dark"] .team-table thead th {
+            color: var(--text-muted-dark);
+            border-bottom-color: var(--border-dark);
+        }
+
+        .team-table tbody td {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        [data-bs-theme="dark"] .team-table tbody td {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .team-table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        [data-bs-theme="dark"] .team-table tbody tr:hover {
+            background: rgba(102, 126, 234, 0.1);
+        }
+
+        /* User Row */
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .user-info h6 {
+            margin: 0;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .user-info p {
+            margin: 0;
+            font-size: 0.8rem;
+            color: var(--text-muted-light);
+        }
+
+        [data-bs-theme="dark"] .user-info p {
+            color: var(--text-muted-dark);
+        }
+
+        /* Status */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-online {
+            background: rgba(40, 167, 69, 0.1);
+            color: #28a745;
+        }
+
+        .status-offline {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+        }
+
+        /* Productivity */
+        .productivity-cell {
+            min-width: 120px;
+        }
+
+        .productivity-bar {
+            height: 6px;
+            background: var(--border-light);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        [data-bs-theme="dark"] .productivity-bar {
+            background: var(--border-dark);
+        }
+
+        .productivity-fill {
+            height: 100%;
+            border-radius: 3px;
+            background: var(--success-gradient);
+        }
+
+        /* Action Buttons */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-muted-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        [data-bs-theme="dark"] .action-btn {
+            border-color: var(--border-dark);
+            color: var(--text-muted-dark);
+        }
+
+        .action-btn:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border-color: #667eea;
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(220, 53, 69, 0.1);
+            color: #dc3545;
+            border-color: #dc3545;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid var(--border-light);
+            background: var(--card-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .theme-toggle-btn {
+            border-color: var(--border-dark);
+            background: var(--card-dark);
+            color: var(--text-dark);
+        }
+
+        .theme-toggle-btn:hover {
+            transform: rotate(15deg);
+        }
+
+        /* Logout Button */
+        .logout-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+        }
+
+        /* Profile Section - Bottom Left Corner */
+        .profile-section {
+            position: fixed;
+            bottom: 15px;
+            left: 15px;
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 10px;
+            padding: 8px 12px;
+            box-shadow: var(--shadow-light);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            max-width: 200px;
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .profile-section {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            box-shadow: var(--shadow-dark);
+        }
+
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            min-width: 32px;
+            border-radius: 50%;
+            background: var(--primary-gradient);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.8rem;
+        }
+
+        .profile-info {
+            overflow: hidden;
+        }
+
+        .profile-info h6 {
+            margin: 0;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .profile-info p {
+            margin: 0;
+            font-size: 0.7rem;
+            color: var(--text-muted-light);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        [data-bs-theme="dark"] .profile-info p {
+            color: var(--text-muted-dark);
+        }
+
+        .profile-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        /* Search */
+        .search-box {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 40px 10px 15px;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            background: var(--card-light);
+            color: var(--text-light);
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .search-input {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted-light);
+            font-size: 0.9rem;
+        }
+
+        [data-bs-theme="dark"] .search-icon {
+            color: var(--text-muted-dark);
+        }
+
+        /* Footer Note */
+        .footer-note {
+            text-align: center;
+            padding: 15px;
+            font-size: 0.8rem;
+            color: var(--text-muted-light);
+            border-top: 1px solid var(--border-light);
+            margin-top: 20px;
+        }
+
+        [data-bs-theme="dark"] .footer-note {
+            color: var(--text-muted-dark);
+            border-top-color: var(--border-dark);
+        }
+
+        /* Animation */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Scrollbar */
+        .team-card-body {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        .team-card-body::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .team-card-body::-webkit-scrollbar-track {
+            background: var(--border-light);
+            border-radius: 3px;
+        }
+
+        [data-bs-theme="dark"] .team-card-body::-webkit-scrollbar-track {
+            background: var(--border-dark);
+        }
+
+        .team-card-body::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 3px;
+        }
+
+        .team-card-body::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        /* Modal Improvements */
+        .modal-content {
+            border-radius: 12px;
+            border: 1px solid var(--border-light);
+        }
+
+        [data-bs-theme="dark"] .modal-content {
+            border-color: var(--border-dark);
+        }
+
+        /* Email Input with Domain */
+        .email-input-group {
+            position: relative;
+        }
+
+        .email-domain {
+            position: absolute;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted-light);
+            font-size: 0.9rem;
+            pointer-events: none;
+        }
+
+        [data-bs-theme="dark"] .email-domain {
+            color: var(--text-muted-dark);
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Dashboard -->
+    <div class="dashboard-container">
+        <!-- Header -->
+        <div class="dashboard-header fade-in">
+            <div class="header-title">
+                <h1>
+                    <i class="fas fa-users me-2"></i>
+                    Team Dashboard
+                </h1>
+            </div>
+            <div class="header-actions">
+                <button id="themeToggle" class="btn theme-toggle-btn" title="Toggle theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger logout-btn">
+                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- KPI Cards with Icons -->
+        <div class="kpi-grid fade-in">
+            <div class="kpi-card">
+                <div class="kpi-icon total">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>{{ team_metrics.total_employees if team_metrics else '4' }}</h3>
+                    <p>Total Employees</p>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-icon active">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>{{ team_metrics.active_employees if team_metrics else '3' }}</h3>
+                    <p>Active Now</p>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-icon idle">
+                    <i class="fas fa-pause"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>{{ team_metrics.idle_employees if team_metrics else '1' }}</h3>
+                    <p>Idle Users</p>
+                </div>
+            </div>
+            
+            <div class="kpi-card">
+                <div class="kpi-icon avg">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="kpi-content">
+                    <h3>{{ team_metrics.overall_productivity if team_metrics else '82.5' }}%</h3>
+                    <p>Avg Productivity</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid - SWAPPED: Charts on left, Team on right -->
+        <div class="content-grid fade-in">
+            <!-- Charts Sidebar - NOW ON LEFT -->
+            <div class="charts-sidebar">
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h4>
+                            <i class="fas fa-chart-line"></i>
+                            Productivity Trend
+                        </h4>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="productivityChart"></canvas>
+                    </div>
+                </div>
+                
+                <div class="chart-card">
+                    <div class="chart-header">
+                        <h4>
+                            <i class="fas fa-chart-pie"></i>
+                            Team Distribution
+                        </h4>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="teamChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Team Table Card - NOW ON RIGHT -->
+            <div class="team-card">
+                <div class="team-header">
+                    <h3>
+                        <i class="fas fa-user-friends"></i>
+                        Team Members
+                    </h3>
+                    <div class="team-actions">
+                        <button class="btn btn-sm btn-outline-primary" onclick="sendWeeklyReport()">
+                            <i class="fas fa-envelope me-1"></i> Send Report
+                        </button>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                            <i class="fas fa-plus me-1"></i> Add Member
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="team-card-body">
+                    <!-- Search -->
+                    <div class="search-box" style="margin: 20px 20px 0 20px;">
+                        <input type="text" class="search-input" 
+                               placeholder="Search team members..." 
+                               id="searchUsers"
+                               onkeyup="searchUsers()">
+                        <i class="fas fa-search search-icon"></i>
+                    </div>
+                    
+                    <!-- Table -->
+                    <table class="team-table">
+                        <thead>
+                            <tr>
+                                <th>Member</th>
+                                <th>Status</th>
+                                <th>Productivity</th>
+                                <th>Active Hours</th>
+                                <th>Idle Hours</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            {% for member in team_stats %}
+                            <tr id="user-{{ member.user.id }}">
+                                <td>
+                                    <div class="user-cell">
+                                        <div class="user-avatar">
+                                            {{ member.user.name[0]|upper }}
+                                        </div>
+                                        <div class="user-info">
+                                            <h6>{{ member.user.name }}</h6>
+                                            <p>{{ member.user.email }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge {% if member.is_online %}status-online{% else %}status-offline{% endif %}">
+                                        <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                        {% if member.is_online %}Online{% else %}Offline{% endif %}
+                                    </span>
+                                </td>
+                                <td class="productivity-cell">
+                                    <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.productivity_score }}%</div>
+                                    <div class="productivity-bar">
+                                        <div class="productivity-fill" style="width: {{ member.stats.productivity_score }}%"></div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.productive_hours }}h</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.idle_hours }}h</div>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn" 
+                                                onclick="editUser('{{ member.user.id }}', '{{ member.user.name }}')"
+                                                title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="action-btn delete" 
+                                                onclick="deleteUser('{{ member.user.id }}', '{{ member.user.name }}')"
+                                                title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Note -->
+        <div class="footer-note fade-in">
+            <i class="fas fa-info-circle me-2"></i>
+            Weekly productivity reports are automatically generated and emailed to all managers.
+        </div>
+    </div>
+
+    <!-- Small Profile in Bottom Left Corner -->
+    <div class="profile-section fade-in">
+        <div class="profile-avatar">
+            {{ session.user.name[0]|upper if session.user else 'M' }}
+        </div>
+        <div class="profile-info">
+            <h6>{{ session.user.name if session.user else 'Manager' }}</h6>
+            <p>Organization Manager</p>
+        </div>
+        <div class="profile-badge">Admin</div>
+    </div>
+
+    <!-- Modals -->
+    <!-- Add User Modal with @workpulse.com domain -->
+    <div class="modal fade" id="addUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Add Team Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addUserForm">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" name="name" required 
+                                   placeholder="Jane Doe">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email Address</label>
+                            <div class="email-input-group">
+                                <input type="text" class="form-control" id="usernameInput" required 
+                                       placeholder="jane"
+                                       oninput="updateEmailPreview()">
+                                <span class="email-domain">@workpulse.app</span>
+                                <input type="hidden" name="email" id="fullEmail">
+                            </div>
+                            <div class="form-text mt-2">
+                                Credentials will be sent to this email
+                            </div>
+                            <div id="emailPreview" class="form-text text-primary mt-1">
+                                Email: <span id="previewText"></span>@workpulse.app
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addUser()">Send Invitation</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div class="modal fade" id="editUserModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Team Member</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editUserForm">
+                        <input type="hidden" id="editUserId" name="id">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="editUserName" name="name" required>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="editUserActive" name="is_active">
+                                <label class="form-check-label" for="editUserActive">Account Active</label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            updateThemeIcon(newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            setTimeout(() => {
+                createManagerCharts();
+            }, 300);
+        });
+
+        function updateThemeIcon(theme) {
+            themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        function getCurrentTheme() {
+            return document.documentElement.getAttribute('data-bs-theme');
+        }
+
+        // Email preview for add user modal
+        function updateEmailPreview() {
+            const username = document.getElementById('usernameInput').value.trim().toLowerCase();
+            const previewText = document.getElementById('previewText');
+            const fullEmail = document.getElementById('fullEmail');
+            
+            // Clean username - only allow letters, numbers, dots, and underscores
+            const cleanUsername = username.replace(/[^a-z0-9._]/g, '');
+            
+            if (cleanUsername) {
+                previewText.textContent = cleanUsername;
+                fullEmail.value = cleanUsername + '@workpulse.app';
+                document.getElementById('emailPreview').style.display = 'block';
+            } else {
+                previewText.textContent = '';
+                fullEmail.value = '';
+                document.getElementById('emailPreview').style.display = 'none';
+            }
+        }
+
+        // Initialize email preview
+        document.addEventListener('DOMContentLoaded', function() {
+            updateEmailPreview();
+        });
+
+        // Charts with real data
+        function createManagerCharts() {
+            const isDark = getCurrentTheme() === 'dark';
+            
+            // Fetch real productivity data
+            fetch('/manager/api/productivity-data')
+                .then(response => response.json())
+                .then(data => {
+                    // Productivity Trend Chart
+                    const prodCtx = document.getElementById('productivityChart');
+                    if (window.productivityChart) {
+                        window.productivityChart.destroy();
+                    }
+                    
+                    window.productivityChart = new Chart(prodCtx, {
+                        type: 'line',
+                        data: {
+                            labels: data.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                            datasets: [{
+                                label: 'Productivity %',
+                                data: data.trend || [75, 82, 68, 90, 78, 85, 88],
+                                borderColor: '#667eea',
+                                backgroundColor: isDark ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.2)',
+                                fill: true,
+                                tension: 0.4,
+                                borderWidth: 2
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    display: false
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: false,
+                                    min: 50,
+                                    max: 100,
+                                    grid: {
+                                        color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                                    },
+                                    ticks: {
+                                        color: isDark ? '#f0f0f0' : '#212529',
+                                        font: {
+                                            size: 10
+                                        }
+                                    }
+                                },
+                                x: {
+                                    grid: {
+                                        color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                                    },
+                                    ticks: {
+                                        color: isDark ? '#f0f0f0' : '#212529',
+                                        font: {
+                                            size: 10
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Team Distribution Chart
+                    const teamCtx = document.getElementById('teamChart');
+                    if (window.teamChart) {
+                        window.teamChart.destroy();
+                    }
+                    
+                    window.teamChart = new Chart(teamCtx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['High (>80%)', 'Medium (60-80%)', 'Low (<60%)'],
+                            datasets: [{
+                                data: data.distribution || [3, 5, 2],
+                                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: isDark ? '#f0f0f0' : '#212529',
+                                        padding: 15,
+                                        font: {
+                                            size: 10
+                                        }
+                                    }
+                                }
+                            },
+                            cutout: '65%'
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching chart data:', error);
+                    // Use fallback data if API fails
+                    createFallbackCharts(isDark);
+                });
+        }
+
+        // Fallback charts if API fails
+        function createFallbackCharts(isDark) {
+            const prodCtx = document.getElementById('productivityChart');
+            if (window.productivityChart) {
+                window.productivityChart.destroy();
+            }
+            
+            window.productivityChart = new Chart(prodCtx, {
+                type: 'line',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Productivity %',
+                        data: [75, 82, 68, 90, 78, 85, 88],
+                        borderColor: '#667eea',
+                        backgroundColor: isDark ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.2)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: false,
+                            min: 50,
+                            max: 100,
+                            grid: {
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529',
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            const teamCtx = document.getElementById('teamChart');
+            if (window.teamChart) {
+                window.teamChart.destroy();
+            }
+            
+            window.teamChart = new Chart(teamCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['High (>80%)', 'Medium (60-80%)', 'Low (<60%)'],
+                    datasets: [{
+                        data: [3, 5, 2],
+                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                color: isDark ? '#f0f0f0' : '#212529',
+                                padding: 15,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        // Initialize charts
+        document.addEventListener('DOMContentLoaded', function() {
+            createManagerCharts();
+        });
+
+        // Add User Function with @workpulse.app domain
+        async function addUser() {
+            const form = document.getElementById('addUserForm');
+            const nameInput = form.querySelector('input[name="name"]');
+            const emailInput = document.getElementById('fullEmail');
+            
+            if (!nameInput.value.trim()) {
+                alert('Please enter a name for the team member.');
+                return;
+            }
+            
+            if (!emailInput.value) {
+                alert('Please enter a username for the email address.');
+                return;
+            }
+            
+            const data = {
+                name: nameInput.value.trim(),
+                email: emailInput.value
+            };
+            
+            try {
+                const response = await fetch('/manager/api/add-user', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
+                    modal.hide();
+                    // Clear form
+                    nameInput.value = '';
+                    document.getElementById('usernameInput').value = '';
+                    updateEmailPreview();
+                    // Reload page after a short delay
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Failed to add user: ' + error.message);
+            }
+        }
+
+        // Edit User Function
+        function editUser(userId, userName) {
+            document.getElementById('editUserId').value = userId;
+            document.getElementById('editUserName').value = userName;
+            
+            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            modal.show();
+        }
+
+        // Save User Changes
+        async function saveUser() {
+            const userId = document.getElementById('editUserId').value;
+            const data = {
+                name: document.getElementById('editUserName').value,
+                is_active: document.getElementById('editUserActive').checked
+            };
+            
+            try {
+                const response = await fetch(`/manager/api/update-user/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert(result.message);
+                    location.reload();
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Failed to update user: ' + error.message);
+            }
+        }
+
+        // Delete User Function
+        function deleteUser(userId, userName) {
+            if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+                fetch(`/manager/api/delete-user/${userId}`, {
+                    method: 'DELETE'
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.success) {
+                        document.getElementById(`user-${userId}`).remove();
+                        alert(result.message);
+                    } else {
+                        alert('Error: ' + result.error);
+                    }
+                })
+                .catch(error => {
+                    alert('Failed to delete user: ' + error.message);
+                });
+            }
+        }
+
+        // Search Users Function
+        let searchTimeout;
+        function searchUsers() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(async () => {
+                const searchTerm = document.getElementById('searchUsers').value;
+                
+                try {
+                    const response = await fetch(`/manager/api/search-users?q=${encodeURIComponent(searchTerm)}`);
+                    const result = await response.json();
+                    
+                    if (result.users) {
+                        updateUsersTable(result.users);
+                    }
+                } catch (error) {
+                    console.error('Search failed:', error);
+                }
+            }, 300);
+        }
+
+        function updateUsersTable(users) {
+            const tableBody = document.getElementById('usersTableBody');
+            tableBody.innerHTML = '';
+            
+            users.forEach(user => {
+                const row = `
+                    <tr id="user-${user.id}">
+                        <td>
+                            <div class="user-cell">
+                                <div class="user-avatar">
+                                    ${user.name[0].toUpperCase()}
+                                </div>
+                                <div class="user-info">
+                                    <h6>${user.name}</h6>
+                                    <p>${user.email}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${user.is_active ? 'status-online' : 'status-offline'}">
+                                <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                ${user.is_active ? 'Online' : 'Offline'}
+                            </span>
+                        </td>
+                        <td class="productivity-cell">
+                            <div class="fw-bold" style="font-size: 0.9rem;">${user.productivity_score || 0}%</div>
+                            <div class="productivity-bar">
+                                <div class="productivity-fill" style="width: ${user.productivity_score || 0}%"></div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="fw-bold" style="font-size: 0.9rem;">${user.productive_hours || 0}h</div>
+                        </td>
+                        <td>
+                            <div class="fw-bold" style="font-size: 0.9rem;">${user.idle_hours || 0}h</div>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn" 
+                                        onclick="editUser('${user.id}', '${user.name}')"
+                                        title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete" 
+                                        onclick="deleteUser('${user.id}', '${user.name}')"
+                                        title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                tableBody.innerHTML += row;
+            });
+        }
+
+        // Send Weekly Report
+        async function sendWeeklyReport() {
+            if (confirm('Send weekly productivity report to your email?')) {
+                try {
+                    const response = await fetch('/manager/api/send-weekly-report', {
+                        method: 'POST'
+                    });
+                    
+                    const result = await response.json();
+                    alert(result.message || result.error);
+                } catch (error) {
+                    alert('Failed to send report: ' + error.message);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - WorkPulse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-light: #f8f9fa;
+            --bg-dark: #1a1a2e;
+            --card-light: #ffffff;
+            --card-dark: #16213e;
+            --text-light: #212529;
+            --text-dark: #f0f0f0;
+            --text-muted-light: #6c757d;
+            --text-muted-dark: #a0a0a0;
+            --border-light: #dee2e6;
+            --border-dark: #2d3748;
+        }
+
+        [data-bs-theme="dark"] {
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        [data-bs-theme="light"] {
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        body {
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+        }
+
+        .login-container {
+            max-width: 450px;
+            width: 100%;
+            margin: 0 auto;
+        }
+
+        .login-card {
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .login-card {
+            background-color: var(--card-dark);
+            border: 1px solid var(--border-dark);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-bs-theme="light"] .login-card {
+            background-color: var(--card-light);
+            border: 1px solid var(--border-light);
+        }
+
+        .login-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 40px 30px 30px;
+            text-align: center;
+        }
+
+        .brand-logo {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        .brand-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .brand-tagline {
+            opacity: 0.9;
+            font-weight: 300;
+        }
+
+        .login-body {
+            padding: 30px;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+        }
+
+        .theme-toggle-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: var(--card-light);
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        [data-bs-theme="dark"] .theme-toggle-btn {
+            border-color: var(--border-dark);
+            background: var(--card-dark);
+            color: var(--text-dark);
+        }
+
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 15px;
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .form-control {
+            background-color: rgba(255, 255, 255, 0.05);
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        [data-bs-theme="dark"] .form-control:focus {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
+            color: var(--text-dark);
+        }
+
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .signup-link {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .signup-link:hover {
+            text-decoration: underline;
+        }
+
+        .text-muted {
+            color: var(--text-muted-light) !important;
+        }
+
+        [data-bs-theme="dark"] .text-muted {
+            color: var(--text-muted-dark) !important;
+        }
+
+        .alert {
+            border-radius: 10px;
+            border: none;
+        }
+
+        .manager-signup-btn {
+            position: absolute;
+            top: 20px;
+            right: 70px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle -->
+    <div class="theme-toggle">
+        <button id="themeToggle" class="btn theme-toggle-btn">
+            <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+    </div>
+
+    <!-- Manager Sign Up Button -->
+    <div class="manager-signup-btn">
+        <a href="{{ url_for('signup') }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-crown me-1"></i>Manager Sign Up
+        </a>
+    </div>
+
+    <div class="container">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="brand-logo">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                    <h1 class="brand-name">WorkPulse</h1>
+                    <p class="brand-tagline mb-0">Productivity tracking for modern teams</p>
+                </div>
+                
+                <div class="login-body">
+                    <h2 class="text-center mb-4">Welcome Back</h2>
+                    <p class="text-center text-muted mb-4">Enter your credentials to access your dashboard</p>
+                    
+                    {% if error %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        {{ error }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    {% if password_changed %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        Password changed successfully! Please login with your new password.
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('login') }}">
+                        <div class="mb-4">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-envelope"></i>
+                                </span>
+                                <input type="email" class="form-control" id="email" name="email" 
+                                       placeholder="name@workpulse.app" required>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text">
+                                    <i class="fas fa-lock"></i>
+                                </span>
+                                <input type="password" class="form-control" id="password" name="password" 
+                                       placeholder="Enter your password" required>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100 mb-3">
+                            <i class="fas fa-right-to-bracket me-2"></i>Sign In
+                        </button>
+                        
+                        <p class="text-center mb-0">
+                            <span class="text-muted">Don't have an account?</span>
+                            <a href="{{ url_for('signup') }}" class="signup-link ms-1">Sign Up</a>
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Check saved theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            updateThemeIcon(newTheme);
+            localStorage.setItem('theme', newTheme);
+        });
+
+        function updateThemeIcon(theme) {
+            themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+
+        // Focus on email field on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('email').focus();
+        });
+    </script>
+</body>
+</html>
