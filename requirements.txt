@@ -11,3 +11,13 @@ pynput==1.7.6
 apscheduler
 resend
 schedule
+mcp 
+fastapi
+uvicorn
+mcp>=0.1.0
+claude-cloud>=0.1.0  
+openai>=1.0.0
+
+requests==2.31.0
+streamlit==1.28.1
+groq==0.3.0

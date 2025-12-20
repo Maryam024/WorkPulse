@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="{{ theme }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant - WorkPulse</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            --glass-bg: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.2);
+        }
+
+        [data-bs-theme="dark"] {
+            --glass-bg: rgba(0, 0, 0, 0.2);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4edf5 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+
+        [data-bs-theme="dark"] body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        }
+
+        /* Glassmorphism */
+        .glass-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .navbar-glass {
+            background: var(--glass-bg) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        /* Navigation */
+        .nav-brand {
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 1.5rem;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            height: 450px;
+            background: linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(248,250,252,0.95) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            overflow-y: auto;
+        }
+
+        [data-bs-theme="dark"] .chat-container {
+            background: linear-gradient(180deg, rgba(30,41,59,0.95) 0%, rgba(15,23,42,0.95) 100%);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 18px;
+            border-radius: 18px 18px 4px 18px;
+            margin: 8px 0;
+            max-width: 75%;
+            float: right;
+            clear: both;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            position: relative;
+        }
+
+        .user-message::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -8px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-top-color: #764ba2;
+            border-bottom: 0;
+            margin-bottom: -8px;
+        }
+
+        .ai-message {
+            background: white;
+            padding: 12px 18px;
+            border-radius: 18px 18px 18px 4px;
+            margin: 8px 0;
+            max-width: 75%;
+            float: left;
+            clear: both;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            position: relative;
+        }
+
+        [data-bs-theme="dark"] .ai-message {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+
+        .ai-message::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-top-color: white;
+            border-bottom: 0;
+            margin-bottom: -8px;
+        }
+
+        [data-bs-theme="dark"] .ai-message::after {
+            border-top-color: rgba(30, 41, 59, 0.8);
+        }
+
+        .message-content {
+            line-height: 1.6;
+        }
+
+        .message-timestamp {
+            font-size: 0.75rem;
+            opacity: 0.7;
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        /* Tool Calls */
+        .tool-call {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 152, 0, 0.1) 100%);
+            padding: 12px;
+            border-radius: 12px;
+            margin: 8px 0;
+            border-left: 4px solid #ffc107;
+            font-size: 0.9rem;
+        }
+
+        [data-bs-theme="dark"] .tool-call {
+            background: linear-gradient(135deg, rgba(255, 193, 7, 0.15) 0%, rgba(255, 152, 0, 0.15) 100%);
+        }
+
+        /* Query Input */
+        .query-input-container {
+            position: relative;
+            background: white;
+            border-radius: 50px;
+            padding: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .query-input-container {
+            background: rgba(30, 41, 59, 0.8);
+        }
+
+        .query-input-container:focus-within {
+            border-color: #667eea;
+            box-shadow: 0 4px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .query-input {
+            border: none;
+            background: transparent;
+            padding: 12px 20px;
+            font-size: 1rem;
+            width: 100%;
+        }
+
+        .query-input:focus {
+            outline: none;
+        }
+
+        .send-btn {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Example Queries */
+        .example-query {
+            background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.8) 100%);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 12px;
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        [data-bs-theme="dark"] .example-query {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.8) 100%);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+
+        .example-query:hover {
+            transform: translateX(5px);
+            border-color: #667eea;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .example-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        /* Tool Cards */
+        .tool-card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 250, 252, 0.9) 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            transition: all 0.3s ease;
+        }
+
+        [data-bs-theme="dark"] .tool-card {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.9) 100%);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+
+        .tool-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .tool-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        /* Charts */
+        .chart-container {
+            height: 320px;
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(226, 232, 240, 0.8);
+        }
+
+        [data-bs-theme="dark"] .chart-container {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(51, 65, 85, 0.8);
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in {
+            animation: fadeIn 0.3s ease forwards;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        .intent-badge {
+            background: rgba(0, 123, 255, 0.1);
+            border-left: 3px solid #007bff;
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(226, 232, 240, 0.5);
+            border-radius: 4px;
+        }
+
+        [data-bs-theme="dark"] ::-webkit-scrollbar-track {
+            background: rgba(51, 65, 85, 0.5);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(148, 163, 184, 0.7);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(148, 163, 184, 1);
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        /* Loading Animation */
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid px-4 py-3">
+        <!-- Enhanced Navigation -->
+        <nav class="navbar navbar-glass rounded-3 mb-4 py-3 px-4">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <div class="rounded-circle bg-primary-gradient p-2">
+                            <i class="fas fa-brain text-white"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="nav-brand">WorkPulse AI</span>
+                        <div class="text-muted small">
+                            <span class="status-indicator status-online"></span>
+                            <span>AI Assistant Online</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-flex align-items-center gap-3">
+                    <div class="d-none d-md-flex align-items-center gap-2">
+                        <i class="fas fa-user-circle text-primary"></i>
+                        <span class="small">{{ role|capitalize }} Mode</span>
+                    </div>
+                    <a href="/{{ 'manager' if role == 'manager' else 'user' }}/dashboard" class="btn btn-outline-primary rounded-pill px-4">
+                        <i class="fas fa-arrow-left me-2"></i> Dashboard
+                    </a>
+                    <button id="themeToggle" class="btn btn-outline-secondary rounded-circle" style="width: 40px; height: 40px;">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="row g-4">
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                <!-- Quick Actions -->
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="mb-3 fw-semibold"><i class="fas fa-bolt text-warning me-2"></i> Quick Actions</h5>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-primary rounded-pill query-example" data-query="Analyze today's productivity">
+                            <i class="fas fa-chart-line me-2"></i> Today's Analysis
+                        </button>
+                        <button class="btn btn-outline-primary rounded-pill query-example" data-query="Show productivity trends for last week">
+                            <i class="fas fa-calendar-week me-2"></i> Weekly Report
+                        </button>
+                        {% if role == 'manager' %}
+                        <button class="btn btn-success rounded-pill query-example" data-query="Generate team productivity report">
+                            <i class="fas fa-users me-2"></i> Team Insights
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Example Queries -->
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="mb-3 fw-semibold"><i class="fas fa-magic text-primary me-2"></i> Try These Queries</h5>
+                    
+                    <div class="example-query" data-query="Show my productivity for today">
+                        <div class="example-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <i class="fas fa-chart-bar"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">Daily Productivity</div>
+                            <small class="text-muted">View today's productive hours</small>
+                        </div>
+                    </div>
+                    
+                    <div class="example-query" data-query="Show productivity trends for last 7 days">
+                        <div class="example-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">Weekly Trends</div>
+                            <small class="text-muted">7-day productivity analysis</small>
+                        </div>
+                    </div>
+                    
+                    <div class="example-query" data-query="Analyze my idle patterns">
+                        <div class="example-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <i class="fas fa-hourglass-half"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">Idle Analysis</div>
+                            <small class="text-muted">Identify idle time patterns</small>
+                        </div>
+                    </div>
+                    
+                    {% if role == 'manager' %}
+                    <div class="example-query" data-query="Generate team productivity report">
+                        <div class="example-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div>
+                            <div class="fw-semibold">Team Report</div>
+                            <small class="text-muted">Team performance insights</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Available Tools -->
+                <div class="glass-card p-4">
+                    <h5 class="mb-3 fw-semibold"><i class="fas fa-tools text-warning me-2"></i> AI Tools</h5>
+                    
+                    <div class="tool-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="tool-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white;">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-semibold mb-1">Productivity Analyzer</h6>
+                                <p class="small text-muted mb-2">Get detailed daily productivity insights with visual breakdowns</p>
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">get_daily_productivity</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="tool-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white;">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-semibold mb-1">Idle Pattern Detection</h6>
+                                <p class="small text-muted mb-2">Analyze idle time patterns and suggest improvements</p>
+                                <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill">analyze_idle_patterns</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if role == 'manager' %}
+                    <div class="tool-card">
+                        <div class="d-flex align-items-start gap-3">
+                            <div class="tool-icon" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white;">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-semibold mb-1">Team Analytics</h6>
+                                <p class="small text-muted mb-2">Generate comprehensive team productivity reports</p>
+                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill">generate_manager_report</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Main Chat Interface -->
+            <div class="col-lg-8">
+                <div class="glass-card h-100">
+                    <!-- Chat Header -->
+                    <div class="p-4 border-bottom">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div>
+                                <h4 class="mb-1 fw-bold">AI Productivity Assistant</h4>
+                                <p class="text-muted mb-0">
+                                    <i class="fas fa-circle text-success me-1" style="font-size: 0.6rem;"></i>
+                                    Ready to analyze your productivity data
+                                </p>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill px-3 py-2">
+                                    <i class="fas fa-microchip me-1"></i> AI Engine v2.1
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chat Container -->
+                    <div class="p-4">
+                        <div class="chat-container" id="chatHistory">
+                            <div class="ai-message fade-in">
+                                <div class="d-flex align-items-center mb-2">
+                                    <div class="rounded-circle bg-primary p-2 me-2" style="width: 32px; height: 32px;">
+                                        <i class="fas fa-robot text-white" style="font-size: 0.8rem;"></i>
+                                    </div>
+                                    <strong>WorkPulse AI</strong>
+                                    <small class="text-muted ms-2">Just now</small>
+                                </div>
+                                <div class="message-content">
+                                    👋 Hello! I'm your AI productivity assistant powered by advanced analytics. 
+                                    I can help you understand your work patterns, identify areas for improvement, 
+                                    and provide actionable insights.
+                                    <div class="mt-3">
+                                        <strong>Try asking:</strong>
+                                        <ul class="mt-2 mb-0">
+                                            <li>"What were my most productive hours yesterday?"</li>
+                                            <li>"Show my weekly productivity trend"</li>
+                                            <li>"Analyze my idle time patterns"</li>
+                                            {% if role == 'manager' %}
+                                            <li>"Generate team productivity comparison"</li>
+                                            {% endif %}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Query Input -->
+                        <div class="query-input-container mt-4">
+                            <div class="d-flex align-items-center">
+                                <input type="text" 
+                                       class="query-input" 
+                                       id="queryInput" 
+                                       placeholder="Ask me anything about your productivity...">
+                                <button class="send-btn" id="sendQuery">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 px-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Press <kbd>Enter</kbd> to send • <kbd>Shift</kbd> + <kbd>Enter</kbd> for new line
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visualization Area -->
+                <div class="glass-card mt-4 p-4" id="visualizationArea" style="display: none;">
+                    <div class="d-flex align-items-center justify-content-between mb-4">
+                        <h5 class="mb-0 fw-semibold">
+                            <i class="fas fa-chart-line text-primary me-2"></i>
+                            <span id="chartTitle">Data Visualization</span>
+                        </h5>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-outline-secondary" onclick="exportChart()">
+                                <i class="fas fa-download me-1"></i> Export
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="toggleChartType()">
+                                <i class="fas fa-exchange-alt me-1"></i> Toggle View
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="dataChart"></canvas>
+                    </div>
+                    <div class="mt-3" id="chartInsights"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // ===== FIXED THEME TOGGLE =====
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+        
+        // Check saved theme or default to light
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        
+        // Set correct initial icon
+        updateThemeIcon(savedTheme);
+        
+        function updateThemeIcon(theme) {
+            themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+        }
+        
+        themeToggle.addEventListener('click', function() {
+            const currentTheme = document.documentElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            // Update theme
+            document.documentElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            
+            // Update icon
+            updateThemeIcon(newTheme);
+            
+            // Update server-side theme preference (optional)
+            updateServerTheme(newTheme);
+        });
+
+        function updateServerTheme(theme) {
+            fetch('/api/update-theme', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ theme: theme })
+            }).catch(err => console.log('Theme update failed:', err));
+        }
+
+        // ===== FIXED QUERY BUTTONS =====
+        // Example query buttons - FIXED SELECTOR
+        document.querySelectorAll('.query-example, .example-query').forEach(button => {
+            button.addEventListener('click', function() {
+                let query = '';
+                
+                // Get query from data-query attribute
+                if (this.dataset.query) {
+                    query = this.dataset.query;
+                } else if (this.closest('[data-query]')) {
+                    query = this.closest('[data-query]').dataset.query;
+                }
+                
+                if (query) {
+                    const input = document.getElementById('queryInput');
+                    input.value = query;
+                    input.focus();
+                    
+                    // Add subtle animation to input
+                    const container = document.querySelector('.query-input-container');
+                    container.classList.add('pulse');
+                    setTimeout(() => {
+                        container.classList.remove('pulse');
+                    }, 500);
+                }
+            });
+        });
+
+        // ===== FIXED SEND QUERY FUNCTION =====
+        document.getElementById('sendQuery').addEventListener('click', async function() {
+            const query = document.getElementById('queryInput').value.trim();
+            if (!query) return;
+
+            // Add user message to chat
+            addMessageToChat('user', query);
+            
+            // Clear input
+            document.getElementById('queryInput').value = '';
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                // Call Flask endpoint
+                const response = await fetch('/api/ai-query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        query: query
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                // Remove typing indicator
+                removeTypingIndicator();
+
+                if (data.success) {
+                    // Show intent badge if available - MOVED THIS HERE
+                    if (data.intent) {
+                        const chatHistory = document.getElementById('chatHistory');
+                        const intentBadge = document.createElement('div');
+                        intentBadge.className = 'intent-badge';
+                        intentBadge.innerHTML = `
+                            <small class="text-muted">
+                                <i class="fas fa-filter"></i> 
+                                Detected as: <span class="badge bg-info">${data.intent}</span>
+                            </small>
+                        `;
+                        chatHistory.appendChild(intentBadge);
+                    }
+                    
+                    // Add AI response
+                    addMessageToChat('ai', data.explanation);
+
+                    // Show tools used with animation
+                    if (data.tool_calls && data.tool_calls.length > 0) {
+                        setTimeout(() => {
+                            showToolCalls(data.tool_calls);
+                        }, 300);
+                    }
+
+                    // Show visualization if data exists
+                    if (data.data && data.data.length > 0) {
+                        setTimeout(() => {
+                            document.getElementById('visualizationArea').style.display = 'block';
+                            document.getElementById('chartTitle').textContent = data.visualization_type === 'bar' 
+                                ? 'Productivity Analysis' 
+                                : 'Trend Analysis';
+                            visualizeData(data.data, data.visualization_type);
+                            showChartInsights(data.data);
+                        }, 500);
+                    }
+
+                } else {
+                    addMessageToChat('ai', `❌ Error: ${data.error || 'Unknown error'}`);
+                }
+
+            } catch(error) {
+                removeTypingIndicator();
+                
+                console.error('Query error:', error);
+                
+                let errorMessage = '❌ Network error: Unable to connect to server. ';
+                errorMessage += 'Please check if the backend is running on port 5000.';
+                
+                if (error.message.includes('Failed to fetch')) {
+                    errorMessage = '❌ Cannot connect to server. Make sure the Flask app is running.';
+                }
+                
+                addMessageToChat('ai', errorMessage);
+                
+                // Show fallback suggestions
+                setTimeout(() => {
+                    addMessageToChat('ai', 
+                        '💡 **Try these instead:**\n' +
+                        '1. Click on example queries above\n' +
+                        '2. Restart the Flask server\n' +
+                        '3. Check console for errors\n\n' +
+                        '*Example: "Show my productivity for today"*'
+                    );
+                }, 500);
+            }
+        });
+
+        // ===== HELPER FUNCTIONS (keep these as is) =====
+        // Add message to chat with timestamp
+        function addMessageToChat(sender, message) {
+            const chatHistory = document.getElementById('chatHistory');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `${sender}-message fade-in`;
+            
+            const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            messageDiv.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle ${sender === 'user' ? 'bg-primary' : 'bg-secondary'} p-2 me-2" 
+                        style="width: 32px; height: 32px;">
+                        <i class="fas ${sender === 'user' ? 'fa-user' : 'fa-robot'} text-white" 
+                        style="font-size: 0.8rem;"></i>
+                    </div>
+                    <strong>${sender === 'user' ? 'You' : 'WorkPulse AI'}</strong>
+                    <small class="text-muted ms-2">${timestamp}</small>
+                </div>
+                <div class="message-content">${formatMessage(message)}</div>
+            `;
+            
+            chatHistory.appendChild(messageDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Format message with line breaks
+        function formatMessage(text) {
+            return text.replace(/\n/g, '<br>');
+        }
+
+        // Show typing indicator
+        function showTypingIndicator() {
+            const chatHistory = document.getElementById('chatHistory');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'ai-message';
+            typingDiv.id = 'typingIndicator';
+            typingDiv.innerHTML = `
+                <div class="d-flex align-items-center mb-2">
+                    <div class="rounded-circle bg-secondary p-2 me-2" style="width: 32px; height: 32px;">
+                        <i class="fas fa-robot text-white" style="font-size: 0.8rem;"></i>
+                    </div>
+                    <strong>WorkPulse AI</strong>
+                </div>
+                <div class="typing-indicator">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            chatHistory.appendChild(typingDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Remove typing indicator
+        function removeTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            if (typingIndicator) {
+                typingIndicator.remove();
+            }
+        }
+
+        // Show tool calls
+        function showToolCalls(toolCalls) {
+            const chatHistory = document.getElementById('chatHistory');
+            const toolDiv = document.createElement('div');
+            toolDiv.className = 'ai-message fade-in';
+            
+            let toolsHtml = `<strong><i class="fas fa-tools me-1"></i> Tools Executed:</strong><br>`;
+            toolsHtml += toolCalls.map(tool => 
+                `<div class="tool-call mt-2">
+                    <div class="d-flex align-items-center mb-1">
+                        <i class="fas fa-cog me-2 text-warning"></i>
+                        <strong>${tool.tool_name}</strong>
+                    </div>
+                    <small class="text-muted">${JSON.stringify(tool.parameters)}</small>
+                </div>`
+            ).join('');
+            
+            toolDiv.innerHTML = toolsHtml;
+            chatHistory.appendChild(toolDiv);
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        // Visualize data
+        function visualizeData(data, type) {
+            const ctx = document.getElementById('dataChart');
+            
+            // Destroy existing chart
+            if (window.currentChart) {
+                window.currentChart.destroy();
+            }
+
+            // Prepare data based on what we received
+            let labels = [];
+            let productiveData = [];
+            let idleData = [];
+            let scoreData = [];
+
+            if (type === 'pie' || (data[0] && data[0].category)) {
+                // Pie chart data
+                labels = data.map(item => item.category || item.date || 'Unknown');
+                productiveData = data.map(item => item.value || item.productive_hours || 0);
+            } else {
+                // Bar/line chart data
+                labels = data.map(item => item.date || item.name || 'Unknown');
+                productiveData = data.map(item => item.productive_hours || item.value || 0);
+                idleData = data.map(item => item.idle_hours || 0);
+                scoreData = data.map(item => item.productivity_score || 0);
+            }
+
+            // Chart gradient
+            const gradient = ctx.getContext('2d').createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(102, 126, 234, 0.3)');
+            gradient.addColorStop(1, 'rgba(102, 126, 234, 0)');
+
+            if (type === 'bar' && idleData.length > 0) {
+                window.currentChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Productive Hours',
+                                data: productiveData,
+                                backgroundColor: gradient,
+                                borderColor: '#667eea',
+                                borderWidth: 2,
+                                borderRadius: 6,
+                                barPercentage: 0.7
+                            },
+                            {
+                                label: 'Idle Hours',
+                                data: idleData,
+                                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                                borderColor: '#ffc107',
+                                borderWidth: 2,
+                                borderRadius: 6,
+                                barPercentage: 0.7
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                }
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false,
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                padding: 12,
+                                cornerRadius: 8
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    drawBorder: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Hours',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Date',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } else if (type === 'line' && scoreData.length > 0) {
+                window.currentChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Productivity Score',
+                            data: scoreData,
+                            borderColor: '#667eea',
+                            backgroundColor: gradient,
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true,
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                grid: {
+                                    drawBorder: false,
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Productivity (%)',
+                                    font: {
+                                        weight: 'bold'
+                                    }
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            } else if (type === 'pie' || productiveData.length === 2) {
+                window.currentChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: productiveData,
+                            backgroundColor: [
+                                'rgba(102, 126, 234, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(40, 167, 69, 0.8)',
+                                'rgba(220, 53, 69, 0.8)'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Show chart insights
+        function showChartInsights(data) {
+            const insightsDiv = document.getElementById('chartInsights');
+            if (data.length > 0) {
+                const avgProductivity = data.reduce((sum, item) => 
+                    sum + (item.productive_hours || item.value || 0), 0) / data.length;
+                
+                const maxProductivity = Math.max(...data.map(item => 
+                    item.productive_hours || item.value || 0));
+                
+                insightsDiv.innerHTML = `
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="glass-card p-3 text-center">
+                                <div class="text-primary fw-bold fs-4">${avgProductivity.toFixed(1)}</div>
+                                <div class="text-muted small">Avg. Hours/Day</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="glass-card p-3 text-center">
+                                <div class="text-success fw-bold fs-4">${maxProductivity.toFixed(1)}</div>
+                                <div class="text-muted small">Peak Productivity</div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="glass-card p-3 text-center">
+                                <div class="text-warning fw-bold fs-4">${data.length}</div>
+                                <div class="text-muted small">Days Analyzed</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Toggle chart type
+        function toggleChartType() {
+            if (window.currentChart) {
+                const currentType = window.currentChart.config.type;
+                const newType = currentType === 'bar' ? 'line' : 
+                            currentType === 'line' ? 'pie' : 'bar';
+                
+                window.currentChart.config.type = newType;
+                window.currentChart.update();
+                
+                document.getElementById('chartTitle').textContent = 
+                    newType === 'bar' ? 'Productivity Analysis' : 
+                    newType === 'line' ? 'Trend Analysis' : 
+                    'Distribution Analysis';
+            }
+        }
+
+        // Export chart
+        function exportChart() {
+            if (window.currentChart) {
+                const link = document.createElement('a');
+                link.download = 'workpulse-chart.png';
+                link.href = window.currentChart.toBase64Image();
+                link.click();
+            }
+        }
+
+        // Allow Enter key to send query
+        document.getElementById('queryInput').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                document.getElementById('sendQuery').click();
+            }
+        });
+
+        // Auto-resize input
+        document.getElementById('queryInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+        });
+
+        // Initialize animations on load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add subtle animation to AI message
+            const aiMessage = document.querySelector('.ai-message');
+            if (aiMessage) {
+                aiMessage.classList.add('fade-in');
+            }
+            
+            // Initialize chart variable
+            window.currentChart = null;
+        });
+    </script>
+</body>
+</html>

@@ -14,7 +14,38 @@ import threading
 from email_service import email_sender
 import schedule
 import time
+import json
+import requests
+from datetime import datetime
 
+# Import AI orchestrator with error handling
+try:
+    from ai_orchestrator import AIOrchestrator
+except ImportError as e:
+    print(f"AI orchestrator import error: {e}")
+    AIOrchestrator = None  # Set the class to None instead
+
+# Later initialize properly
+ai_orchestrator = None  # Global variable
+
+def initialize_ai():
+    """Initialize AI orchestrator"""
+    global ai_orchestrator
+    if AIOrchestrator is None:
+        print("❌ AI Orchestrator module not available")
+        return False
+    
+    try:
+        ai_orchestrator = AIOrchestrator()
+        print("✅ AI Orchestrator initialized successfully")
+        return True
+    except Exception as e:
+        print(f"❌ Failed to initialize AI: {e}")
+        ai_orchestrator = None
+        return False
+
+# Initialize AI when app starts
+initialize_ai()
 # Load environment variables FIRST
 load_dotenv()
 
@@ -929,7 +960,85 @@ def start_scheduler():
         schedule.run_pending()
         time.sleep(60)
 
-# Start scheduler in a separate thread when app starts
+@app.route('/ai-assistant')
+def ai_assistant():
+    """AI Assistant dashboard"""
+    if not require_login():
+        return redirect(url_for('login'))
+    
+    # Get user settings
+    user_id = session['user']['id']
+    settings = get_user_settings(user_id)
+    session['theme'] = settings.get('theme', 'light')
+    
+    return render_template('ai_query.html',
+                           user=session.get('user'),
+                           role=session.get('role'),
+                           theme=session.get('theme', 'light'))
+
+@app.route('/api/ai-query', methods=['POST'])
+def process_ai_query():
+    """Process natural language query using AI"""
+    if not require_login():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    query = data.get('query', '').strip()
+    user_id = session['user']['id']
+    
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+    
+    # Check if AI orchestrator is available
+    if not ai_orchestrator:
+        return jsonify({
+            'success': True,
+            'explanation': "🤖 **AI Assistant is currently unavailable**\n\n" \
+                          "The AI engine is not configured or failed to initialize.\n\n" \
+                          "**Try these instead:**\n" \
+                          "1. Click on the example queries above\n" \
+                          "2. Ask simpler questions like 'Show my productivity'\n" \
+                          "3. Check if the MCP server is running on port 8000\n\n" \
+                          "*Note: Basic productivity data will still work without AI.*",
+            'data': [],
+            'visualization_type': 'bar',
+            'tool_calls': []
+        })
+    
+    try:
+        response = ai_orchestrator.process_query(user_id, query)
+        
+        return jsonify({
+            'success': True,
+            'explanation': response.get('explanation', ''),
+            'data': response.get('data', []),
+            'visualization_type': response.get('visualization_type', 'bar'),
+            'tool_calls': response.get('tool_calls', [])
+        })
+        
+    except Exception as e:
+        print(f"AI query error: {e}")
+        # Return a graceful error response instead of crashing
+        return jsonify({
+            'success': True,
+            'explanation': f"🤖 **AI Assistant Encountered an Error**\n\n" \
+                          f"**Your Query:** '{query}'\n\n" \
+                          f"**What happened:** {str(e)}\n\n" \
+                          f"**Suggestions:**\n" \
+                          f"1. Try rephrasing your question\n" \
+                          f"2. Use simpler language\n" \
+                          f"3. Try one of the example queries\n" \
+                          f"4. Check if the MCP server is running\n\n" \
+                          f"*Example: 'Show my productivity for today'*",
+            'data': [],
+            'visualization_type': 'bar',
+            'tool_calls': []
+        })
+# Add a link to AI assistant in your existing dashboards
+# In user_dashboard.html and manager_dashboard.html, add:
+# <a href="/ai-assistant" class="btn btn-primary">🤖 Ask AI Assistant</a>
+
+
 if __name__ == '__main__':
     # Start scheduler in background thread
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
