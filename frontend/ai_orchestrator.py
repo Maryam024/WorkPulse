@@ -1,4 +1,3 @@
-# ai_orchestrator.py - UPDATED WITH CURRENT MODELS
 from datetime import datetime, timezone
 import os
 import json
@@ -498,6 +497,38 @@ class AIOrchestrator:
     def _generate_role_based_explanation(self, query: str, tool_name: str, tool_result: Any, user_role: str) -> str:
         """Generate explanation with role context"""
         
+        # Add this case for idle patterns:
+        if tool_name == "analyze_idle_patterns":
+            if isinstance(tool_result, dict):
+                idle_pct = tool_result.get("idle_percentage", 0)
+                total_activities = tool_result.get("total_activities", 0)
+                idle_count = tool_result.get("idle_count", 0)
+                common_times = tool_result.get("common_idle_times", [])
+                
+                explanation = f"⏸️ **Idle Pattern Analysis**\n\n"
+                explanation += f"**📊 Summary:**\n"
+                explanation += f"• Idle percentage: **{idle_pct:.1f}%**\n"
+                explanation += f"• Total activities tracked: **{total_activities}**\n"
+                explanation += f"• Idle events: **{idle_count}**\n\n"
+                
+                if common_times:
+                    explanation += f"**🕒 Common Idle Times:**\n"
+                    for time in common_times[:5]:  # Show top 5
+                        explanation += f"• {time}\n"
+                
+                # Add analysis from tool_result
+                analysis = tool_result.get("analysis", "")
+                if analysis:
+                    explanation += f"\n**💡 Insights:**\n{analysis}"
+                
+                if idle_pct > 20:
+                    explanation += f"\n\n**⚠️ Recommendation:** Your idle time is above average. Try taking scheduled breaks to maintain focus."
+                elif idle_pct < 10:
+                    explanation += f"\n\n**✅ Excellent:** Your idle time is very low. Keep up the good work!"
+                
+                return explanation
+        
+        # Rest of the method remains the same...
         if tool_name == "get_daily_productivity":
             if isinstance(tool_result, list) and tool_result:
                 total_productive = sum(d.get("productive_hours", 0) for d in tool_result)
@@ -532,7 +563,7 @@ class AIOrchestrator:
                 
                 return explanation
         
-        # Fallback explanation
+        # Fallback explanation - THIS IS WHAT YOU'RE SEEING
         return f"📊 **Analysis Complete**\n\nBased on your query '{query}', here's your productivity data."
 
     def _fallback_response_with_role(self, user_id: str, query: str, error: str, intent: str, user_role: str) -> Dict[str, Any]:
@@ -568,43 +599,43 @@ class AIOrchestrator:
             "intent": intent,
             "user_role": user_role
         }
-    def _determine_visualization_type(self, query: str, tool_name: str, data: List[Dict]) -> str:
-            """Determine the best visualization type based on query and results"""
-            query_lower = query.lower()
-            
-            print(f"\n🎨 DETERMINING VISUALIZATION TYPE")
-            print(f"   Query: {query_lower}")
-            print(f"   Tool: {tool_name}")
-            print(f"   Data points: {len(data)}")
-            
-            # Priority rules
-            if tool_name == "analyze_idle_patterns":
-                print(f"   🎯 Selected: pie (idle analysis)")
-                return "pie"
-            
-            if "trend" in query_lower or "over time" in query_lower or "week" in query_lower:
-                print(f"   🎯 Selected: line (trend query)")
-                return "line"
-            
-            if "compare" in query_lower or "team" in query_lower:
-                print(f"   🎯 Selected: bar (comparison)")
-                return "bar"
-            
-            if tool_name == "generate_manager_report":
-                print(f"   🎯 Selected: bar (manager report)")
-                return "bar"
-            
-            # Default based on data
-            if data and len(data) > 1:
-                if any("category" in d for d in data):
-                    print(f"   🎯 Selected: pie (categorical data)")
-                    return "pie"
-                else:
-                    print(f"   🎯 Selected: bar (multiple data points)")
-                    return "bar"
-            
-            print(f"   🎯 Selected: bar (default)")
+    def _determine_visualization_type(self, query: str, tool_name: str, data: List[Dict], user_role: str = None) -> str:
+        """Determine the best visualization type based on query and results"""
+        query_lower = query.lower()
+        
+        print(f"\n🎨 DETERMINING VISUALIZATION TYPE")
+        print(f"   Query: {query_lower}")
+        print(f"   Tool: {tool_name}")
+        print(f"   Data points: {len(data)}")
+        
+        # Priority rules
+        if tool_name == "analyze_idle_patterns":
+            print(f"   🎯 Selected: pie (idle analysis)")
+            return "pie"
+        
+        if "trend" in query_lower or "over time" in query_lower or "week" in query_lower:
+            print(f"   🎯 Selected: line (trend query)")
+            return "line"
+        
+        if "compare" in query_lower or "team" in query_lower:
+            print(f"   🎯 Selected: bar (comparison)")
             return "bar"
+        
+        if tool_name == "generate_manager_report":
+            print(f"   🎯 Selected: bar (manager report)")
+            return "bar"
+        
+        # Default based on data
+        if data and len(data) > 1:
+            if any("category" in d for d in data):
+                print(f"   🎯 Selected: pie (categorical data)")
+                return "pie"
+            else:
+                print(f"   🎯 Selected: bar (multiple data points)")
+                return "bar"
+        
+        print(f"   🎯 Selected: bar (default)")
+        return "bar"
 
     def _extract_visualization_data(self, tool_result: Any, tool_name: str) -> List[Dict]:
         """Extract data suitable for visualization from tool results"""
@@ -823,8 +854,18 @@ class AIOrchestrator:
                 return explanation
             
         elif tool_name == "analyze_idle_patterns":
-            # Similar detailed analysis for idle patterns
-            pass
+            if isinstance(tool_result, dict):
+                idle_pct = tool_result.get("idle_percentage", 0)
+                analysis = tool_result.get("analysis", "")
+                
+                explanation = f"⏸️ **Idle Pattern Analysis**\n\n"
+                explanation += f"Your idle time percentage is **{idle_pct:.1f}%**.\n\n"
+                explanation += analysis
+                
+                if idle_pct > 20:
+                    explanation += "\n\n**💡 Tip:** Consider using the Pomodoro technique (25min work, 5min break) to reduce idle time."
+                
+                return explanation
         
         # Fallback
         return f"📊 **Analysis Complete**\n\nBased on your query '{query}', here's your productivity data."
