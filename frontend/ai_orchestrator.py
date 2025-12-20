@@ -7,7 +7,7 @@ import requests
 from dataclasses import dataclass
 from dotenv import load_dotenv
 import groq
-
+from supabase_client import supabase
 # Load environment variables
 load_dotenv()
 
@@ -23,6 +23,7 @@ class AIOrchestrator:
     def __init__(self):
         self.groq_api_key = os.getenv("GROQ_API_KEY")
         self.mcp_server_url = os.getenv("MCP_SERVER_URL", "http://localhost:8000")
+        self.supabase = supabase
         
         # Available Groq models (as of Dec 2024)
         self.available_models = [
@@ -200,7 +201,11 @@ class AIOrchestrator:
         except Exception as e:
             print(f"Failed to log intent: {e}")
     def process_query(self, user_id: str, query: str) -> Dict[str, Any]:
-        """Two-stage MCP processing with intent gating"""
+        """Two-stage MCP processing with intent gating and role-based access"""
+        
+        # STEP 0: Get user role FIRST
+        user_role = self._get_user_role(user_id)
+        print(f"👤 User Role Detected: {user_role} for user {user_id}")
         
         # STAGE 1: Intent Classification
         try:
@@ -242,38 +247,77 @@ class AIOrchestrator:
                 }
         
         try:
-            # Determine which single tool to use based on intent
-            tool_name = self._determine_single_tool(intent_result["intent"], query)
+            # STEP 2: Determine tool based on intent AND user role
+            tool_name = self._determine_tool_by_role(intent_result["intent"], query, user_role)
             
-            # Extract parameters for the single tool
-            parameters = self._extract_single_tool_parameters(tool_name, query, user_id)
+            # STEP 3: Extract parameters with role consideration
+            parameters = self._extract_tool_parameters(tool_name, query, user_id, user_role)
+            
+            # STEP 4: Validate manager access for team tools
+            if not self._validate_tool_access(tool_name, user_role):
+                return {
+                    "explanation": f"🔒 **Access Denied**\n\nThis feature is only available for managers. "
+                                f"You're currently logged in as a {user_role}.\n\n"
+                                f"Please ask about your personal productivity or contact your manager.",
+                    "data": [],
+                    "visualization_type": "none",
+                    "tool_calls": [],
+                    "intent": intent_result["intent"]
+                }
             
             # Log tool call attempt
             print(f"🔧 Tool Selection: {tool_name} with params: {parameters}")
+            print(f"   User Role: {user_role}")
             
-            # Execute the single tool via MCP server
-            mcp_response = self._execute_tool(tool_name, parameters)  # Renamed to mcp_response
+            # STEP 5: Execute the tool via MCP server
+            mcp_response = self._execute_tool_with_debug(tool_name, parameters)
             
             if "error" in mcp_response:
-                raise Exception(f"Tool execution failed: {mcp_response.get('error')}")
+                error_msg = mcp_response.get('error', 'Unknown error')
+                print(f"❌ MCP Tool Error: {error_msg}")
+                
+                # Try fallback to basic tool if manager tool fails
+                if tool_name in ["generate_manager_report", "get_team_productivity"] and user_role == "manager":
+                    print("🔄 Falling back to basic productivity tool for manager")
+                    tool_name = "get_daily_productivity"
+                    parameters = {"user_id": user_id, "days": 7}
+                    mcp_response = self._execute_tool_with_debug(tool_name, parameters)
+                    
+                    if "error" in mcp_response:
+                        raise Exception(f"Fallback also failed: {mcp_response.get('error')}")
+                else:
+                    raise Exception(f"Tool execution failed: {error_msg}")
             
             # Extract the actual result data from MCP response
             if isinstance(mcp_response, dict) and "result" in mcp_response:
                 tool_result = mcp_response["result"]
+                print(f"✅ Successfully extracted 'result' from MCP response")
             else:
                 tool_result = mcp_response
+                print(f"⚠️ No 'result' key found, using raw response")
             
             print(f"📊 Tool result type: {type(tool_result)}")
-            print(f"📊 Tool result preview: {str(tool_result)[:200]}...")
             
-            # Generate user-friendly explanation
-            explanation = self._generate_explanation(query, tool_name, tool_result)  # Pass tool_result, not mcp_response
+            # Debug print based on result type
+            if isinstance(tool_result, list):
+                print(f"📊 Tool result items: {len(tool_result)}")
+                if tool_result:
+                    print(f"📊 First item: {tool_result[0]}")
+            elif isinstance(tool_result, dict):
+                print(f"📊 Tool result keys: {list(tool_result.keys())}")
             
-            # Extract data for visualization
-            data = self._extract_visualization_data(tool_result, tool_name)  # Pass tool_result, not mcp_response
+            # STEP 6: Generate user-friendly explanation with role context
+            explanation = self._generate_role_based_explanation(query, tool_name, tool_result, user_role)
             
-            # Determine appropriate visualization type
-            visualization_type = self._determine_visualization_type(query, tool_name, data)
+            # STEP 7: Extract data for visualization
+            data = self._extract_visualization_data(tool_result, tool_name)
+            
+            print(f"📈 Visualization data points: {len(data)}")
+            if data:
+                print(f"📈 Sample data: {data[0]}")
+            
+            # STEP 8: Determine appropriate visualization type
+            visualization_type = self._determine_visualization_type(query, tool_name, data, user_role)
             
             return {
                 "explanation": explanation,
@@ -283,7 +327,8 @@ class AIOrchestrator:
                     "tool_name": tool_name,
                     "parameters": parameters
                 }],
-                "intent": intent_result["intent"]
+                "intent": intent_result["intent"],
+                "user_role": user_role  # Optional: include role in response for frontend
             }
             
         except Exception as e:
@@ -291,14 +336,12 @@ class AIOrchestrator:
             import traceback
             traceback.print_exc()
             # Return informative fallback response
-            return self._fallback_response(user_id, query, str(e), intent_result.get("intent", "unknown"))
-        
+            return self._fallback_response_with_role(user_id, query, str(e), 
+                                                    intent_result.get("intent", "unknown"), 
+                                                    user_role)
+        # In ai_orchestrator.py, _execute_tool method:
     def _execute_tool(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
-        """Execute tool via MCP server"""
         try:
-            print(f"   📡 Calling MCP server: {self.mcp_server_url}/execute_tool/{tool_name}")
-            print(f"   📡 Parameters: {parameters}")
-            
             response = requests.post(
                 f"{self.mcp_server_url}/execute_tool/{tool_name}",
                 json=parameters,
@@ -307,64 +350,261 @@ class AIOrchestrator:
             response.raise_for_status()
             result = response.json()
             
-            print(f"   ✅ Tool executed successfully")
-            print(f"   📊 Response type: {type(result)}")
-            print(f"   📊 Response keys: {result.keys() if isinstance(result, dict) else 'Not a dict'}")
+            # FIX: Check the actual response structure from server.py
+            print(f"🔧 MCP Response: {json.dumps(result, indent=2)}")
             
-            # Debug: Show what's actually in the result
-            if isinstance(result, dict) and "result" in result:
-                result_data = result["result"]
-                print(f"   📊 Result type: {type(result_data)}")
-                if isinstance(result_data, list):
-                    print(f"   📊 Result length: {len(result_data)}")
-                    if result_data:
-                        print(f"   📊 First item: {result_data[0]}")
-                elif isinstance(result_data, dict):
-                    print(f"   📊 Result keys: {result_data.keys()}")
+            # Extract data based on actual server response
+            if result.get("success"):
+                return result.get("result", [])  # Return the actual result data
+            else:
+                return {"error": f"Tool execution failed: {result}"}
+                
+        except Exception as e:
+            print(f"❌ MCP Tool execution error: {e}")
+            return {"error": str(e), "tool": tool_name}
+    def _get_user_role(self, user_id: str) -> str:
+        """Get user role from database"""
+        try:
+            # Import here to avoid circular imports
+            from supabase_client import supabase
+            
+            response = supabase.table("profiles").select("role").eq("id", user_id).execute()
+            
+            if response.data:
+                role = response.data[0].get("role", "user")
+                return role
+            else:
+                # Try to get from session if available
+                return "user"  # Default fallback
+        except Exception as e:
+            print(f"⚠️ Failed to get user role: {e}")
+            return "user"  # Default to user if error
+
+    def _determine_tool_by_role(self, intent: str, query: str, user_role: str) -> str:
+        """Determine tool based on intent AND user role"""
+        query_lower = query.lower()
+        
+        # Manager-specific tools
+        if user_role == "manager":
+            if "team" in query_lower or "all" in query_lower or "everyone" in query_lower:
+                return "get_team_productivity"
+            elif "compare" in query_lower or "comparison" in query_lower:
+                return "get_team_comparison"
+            elif "report" in query_lower or "summary" in query_lower:
+                return "generate_manager_report"
+            elif "idle" in query_lower or "inactive" in query_lower:
+                # Managers can analyze idle patterns for themselves
+                return "analyze_idle_patterns"
+            else:
+                # Default for managers asking about themselves
+                return "get_daily_productivity"
+        
+        # User tools (regular employees)
+        else:
+            if "idle" in query_lower or "inactive" in query_lower:
+                return "analyze_idle_patterns"
+            else:
+                # Users can only see their own data
+                return "get_daily_productivity"
+
+    def _extract_tool_parameters(self, tool_name: str, query: str, user_id: str, user_role: str) -> dict:
+        """Extract parameters with role consideration"""
+        query_lower = query.lower()
+        
+        # Base parameters
+        if tool_name == "get_daily_productivity":
+            params = {"user_id": user_id}
+            if "today" in query_lower:
+                params["days"] = 1
+            elif "week" in query_lower or "7" in query:
+                params["days"] = 7
+            elif "month" in query_lower or "30" in query:
+                params["days"] = 30
+            else:
+                params["days"] = 7  # Default
+        
+        elif tool_name in ["get_team_productivity", "get_team_comparison"]:
+            # These are manager-only tools
+            params = {"manager_id": user_id}
+            if "month" in query_lower or "30" in query:
+                params["days"] = 30
+            else:
+                params["days"] = 7
+        
+        elif tool_name == "generate_manager_report":
+            params = {"manager_id": user_id}
+            params["days"] = 7  # Default weekly report
+        
+        elif tool_name == "analyze_idle_patterns":
+            params = {"user_id": user_id}
+        
+        else:
+            params = {"user_id": user_id}
+        
+        print(f"📋 Extracted parameters for {tool_name}: {params}")
+        return params
+
+    def _validate_tool_access(self, tool_name: str, user_role: str) -> bool:
+        """Validate if user has access to the requested tool"""
+        manager_tools = ["get_team_productivity", "get_team_comparison", "generate_manager_report"]
+        
+        if tool_name in manager_tools and user_role != "manager":
+            print(f"🚫 Access denied: {tool_name} requires manager role, user is {user_role}")
+            return False
+        
+        return True
+
+    def _execute_tool_with_debug(self, tool_name: str, parameters: Dict[str, Any]) -> Any:
+        """Execute tool with detailed debugging"""
+        print(f"🛠️ Executing {tool_name} via MCP server...")
+        print(f"   Parameters: {parameters}")
+        
+        try:
+            response = requests.post(
+                f"{self.mcp_server_url}/execute_tool/{tool_name}",
+                json=parameters,
+                timeout=15
+            )
+            
+            print(f"   MCP Status Code: {response.status_code}")
+            
+            if response.status_code != 200:
+                print(f"   ❌ MCP Error Response: {response.text}")
+                return {"error": f"MCP server returned {response.status_code}"}
+            
+            result = response.json()
+            print(f"   ✅ MCP Response received")
+            print(f"   Response keys: {list(result.keys())}")
+            
+            if "result" in result:
+                print(f"   Result type: {type(result['result'])}")
+                if isinstance(result['result'], list):
+                    print(f"   Result items: {len(result['result'])}")
+                elif isinstance(result['result'], dict):
+                    print(f"   Result dict keys: {list(result['result'].keys())}")
             
             return result
             
+        except requests.exceptions.ConnectionError:
+            print(f"   ❌ Cannot connect to MCP server at {self.mcp_server_url}")
+            return {"error": "MCP server not reachable. Make sure it's running on port 8000."}
+        except requests.exceptions.Timeout:
+            print(f"   ⏱️  MCP server timeout")
+            return {"error": "MCP server timeout. Try again."}
         except Exception as e:
-            print(f"   ❌ Tool execution error: {e}")
-            return {"error": str(e), "tool": tool_name}
-    
+            print(f"   ❌ MCP execution error: {e}")
+            return {"error": str(e)}
+
+    def _generate_role_based_explanation(self, query: str, tool_name: str, tool_result: Any, user_role: str) -> str:
+        """Generate explanation with role context"""
+        
+        if tool_name == "get_daily_productivity":
+            if isinstance(tool_result, list) and tool_result:
+                total_productive = sum(d.get("productive_hours", 0) for d in tool_result)
+                total_idle = sum(d.get("idle_hours", 0) for d in tool_result)
+                avg_score = sum(d.get("productivity_score", 0) for d in tool_result) / len(tool_result)
+                
+                explanation = f"📊 **Your Productivity Analysis**\n\n"
+                explanation += f"**📈 Summary ({len(tool_result)} days):**\n"
+                explanation += f"• Total Productive: **{total_productive:.1f}h**\n"
+                explanation += f"• Total Idle: **{total_idle:.1f}h**\n"
+                explanation += f"• Average Score: **{avg_score:.1f}%**\n\n"
+                
+                if user_role == "manager":
+                    explanation += "💼 *Viewing your personal productivity as a manager*\n"
+                
+                return explanation
+        
+        elif tool_name == "get_team_productivity":
+            explanation = f"👥 **Team Productivity Report**\n\n"
+            if isinstance(tool_result, dict) and "team_data" in tool_result:
+                team_data = tool_result["team_data"]
+                summary = tool_result.get("summary", {})
+                
+                explanation += f"**Team Overview:**\n"
+                explanation += f"• Team Size: **{len(team_data)} members**\n"
+                explanation += f"• Period: **{tool_result.get('period_days', 7)} days**\n"
+                explanation += f"• Avg Productivity: **{summary.get('average_productivity', 0):.1f}%**\n\n"
+                
+                explanation += f"**🏆 Top Performers:**\n"
+                for i, member in enumerate(team_data[:3]):
+                    explanation += f"{i+1}. **{member.get('name', 'Unknown')}** - {member.get('productivity_score', 0):.1f}%\n"
+                
+                return explanation
+        
+        # Fallback explanation
+        return f"📊 **Analysis Complete**\n\nBased on your query '{query}', here's your productivity data."
+
+    def _fallback_response_with_role(self, user_id: str, query: str, error: str, intent: str, user_role: str) -> Dict[str, Any]:
+        """Fallback response with role context"""
+        
+        role_context = "👤 User" if user_role == "user" else "💼 Manager"
+        
+        explanation = f"🤖 **WorkPulse AI Assistant** ({role_context})\n\n"
+        explanation += f"**Query:** '{query}'\n\n"
+        
+        if error:
+            explanation += f"**Error:** {error}\n\n"
+        
+        if user_role == "manager":
+            explanation += "**As a manager, you can:**\n"
+            explanation += "• View team productivity reports\n"
+            explanation += "• Compare team member performance\n"
+            explanation += "• Generate weekly reports\n"
+            explanation += "• Analyze your own productivity\n\n"
+            explanation += "**Try:** 'Show my team's productivity' or 'Generate weekly report'"
+        else:
+            explanation += "**You can:**\n"
+            explanation += "• View your daily productivity\n"
+            explanation += "• Analyze your idle patterns\n"
+            explanation += "• See weekly trends\n\n"
+            explanation += "**Try:** 'Show my productivity today' or 'Analyze my idle time'"
+        
+        return {
+            "explanation": explanation,
+            "data": [],
+            "visualization_type": "bar",
+            "tool_calls": [],
+            "intent": intent,
+            "user_role": user_role
+        }
     def _determine_visualization_type(self, query: str, tool_name: str, data: List[Dict]) -> str:
-        """Determine the best visualization type based on query and results"""
-        query_lower = query.lower()
-        
-        print(f"\n🎨 DETERMINING VISUALIZATION TYPE")
-        print(f"   Query: {query_lower}")
-        print(f"   Tool: {tool_name}")
-        print(f"   Data points: {len(data)}")
-        
-        # Priority rules
-        if tool_name == "analyze_idle_patterns":
-            print(f"   🎯 Selected: pie (idle analysis)")
-            return "pie"
-        
-        if "trend" in query_lower or "over time" in query_lower or "week" in query_lower:
-            print(f"   🎯 Selected: line (trend query)")
-            return "line"
-        
-        if "compare" in query_lower or "team" in query_lower:
-            print(f"   🎯 Selected: bar (comparison)")
-            return "bar"
-        
-        if tool_name == "generate_manager_report":
-            print(f"   🎯 Selected: bar (manager report)")
-            return "bar"
-        
-        # Default based on data
-        if data and len(data) > 1:
-            if any("category" in d for d in data):
-                print(f"   🎯 Selected: pie (categorical data)")
+            """Determine the best visualization type based on query and results"""
+            query_lower = query.lower()
+            
+            print(f"\n🎨 DETERMINING VISUALIZATION TYPE")
+            print(f"   Query: {query_lower}")
+            print(f"   Tool: {tool_name}")
+            print(f"   Data points: {len(data)}")
+            
+            # Priority rules
+            if tool_name == "analyze_idle_patterns":
+                print(f"   🎯 Selected: pie (idle analysis)")
                 return "pie"
-            else:
-                print(f"   🎯 Selected: bar (multiple data points)")
+            
+            if "trend" in query_lower or "over time" in query_lower or "week" in query_lower:
+                print(f"   🎯 Selected: line (trend query)")
+                return "line"
+            
+            if "compare" in query_lower or "team" in query_lower:
+                print(f"   🎯 Selected: bar (comparison)")
                 return "bar"
-        
-        print(f"   🎯 Selected: bar (default)")
-        return "bar"
+            
+            if tool_name == "generate_manager_report":
+                print(f"   🎯 Selected: bar (manager report)")
+                return "bar"
+            
+            # Default based on data
+            if data and len(data) > 1:
+                if any("category" in d for d in data):
+                    print(f"   🎯 Selected: pie (categorical data)")
+                    return "pie"
+                else:
+                    print(f"   🎯 Selected: bar (multiple data points)")
+                    return "bar"
+            
+            print(f"   🎯 Selected: bar (default)")
+            return "bar"
 
     def _extract_visualization_data(self, tool_result: Any, tool_name: str) -> List[Dict]:
         """Extract data suitable for visualization from tool results"""
@@ -549,15 +789,45 @@ class AIOrchestrator:
         else:
             return {"intent": "other", "actionable": False}
 
-    def _generate_explanation(self, query: str, tool_name: str, tool_result: dict) -> str:
-        """Generate user-friendly explanation"""
+    def _generate_explanation(self, query: str, tool_name: str, tool_result: Any) -> str:
+        """Generate user-friendly explanation with actual data insights"""
+        
         if tool_name == "get_daily_productivity":
-            return f"📊 **Productivity Analysis**\n\nBased on your query '{query}', here's your productivity data."
+            if isinstance(tool_result, list) and len(tool_result) > 0:
+                # Calculate actual statistics
+                total_productive = sum(d.get("productive_hours", 0) for d in tool_result)
+                total_idle = sum(d.get("idle_hours", 0) for d in tool_result)
+                avg_productivity = sum(d.get("productivity_score", 0) for d in tool_result) / len(tool_result)
+                
+                # Find best and worst days
+                best_day = max(tool_result, key=lambda x: x.get("productivity_score", 0))
+                worst_day = min(tool_result, key=lambda x: x.get("productivity_score", 100))
+                
+                explanation = f"📊 **Productivity Analysis - Last 7 Days**\n\n"
+                explanation += f"**📈 Overall Stats:**\n"
+                explanation += f"• Total Productive Hours: **{total_productive:.1f}h**\n"
+                explanation += f"• Total Idle Hours: **{total_idle:.1f}h**\n"
+                explanation += f"• Average Productivity: **{avg_productivity:.1f}%**\n\n"
+                
+                explanation += f"**🏆 Best Day:** {best_day.get('date', 'Unknown')} - {best_day.get('productivity_score', 0):.1f}%\n"
+                explanation += f"**📉 Needs Improvement:** {worst_day.get('date', 'Unknown')} - {worst_day.get('productivity_score', 0):.1f}%\n\n"
+                
+                explanation += f"**💡 Insights:**\n"
+                if avg_productivity > 80:
+                    explanation += "• Excellent productivity! You're consistently performing well.\n"
+                elif avg_productivity > 60:
+                    explanation += "• Good productivity! Room for minor improvements.\n"
+                else:
+                    explanation += "• Consider analyzing your workflow for optimization opportunities.\n"
+                    
+                return explanation
+            
         elif tool_name == "analyze_idle_patterns":
-            return f"⏸️ **Idle Pattern Analysis**\n\nAnalysis of your inactive periods based on '{query}'."
-        elif tool_name == "generate_manager_report":
-            return f"👥 **Team Report**\n\nTeam productivity report generated from your query '{query}'."
-        return f"Analysis complete for: {query}"
+            # Similar detailed analysis for idle patterns
+            pass
+        
+        # Fallback
+        return f"📊 **Analysis Complete**\n\nBased on your query '{query}', here's your productivity data."
 
     def _generate_friendly_response(self, query: str, intent: str) -> str:
         """Generate responses for non-actionable intents"""

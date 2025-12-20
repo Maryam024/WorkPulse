@@ -17,6 +17,8 @@ import time
 import json
 import requests
 from datetime import datetime
+# Add after imports
+from password_recovery import password_recovery
 
 # Import AI orchestrator with error handling
 try:
@@ -975,7 +977,17 @@ def ai_assistant():
                            user=session.get('user'),
                            role=session.get('role'),
                            theme=session.get('theme', 'light'))
+# In app.py, after initializing AI
+def check_mcp_server():
+    try:
+        response = requests.get("http://localhost:8000/health", timeout=2)
+        return response.status_code == 200
+    except:
+        return False
 
+if ai_orchestrator:
+    if not check_mcp_server():
+        print("⚠️ MCP Server not running. Start it with: python server.py")
 @app.route('/api/ai-query', methods=['POST'])
 def process_ai_query():
     """Process natural language query using AI"""
@@ -1034,10 +1046,98 @@ def process_ai_query():
             'visualization_type': 'bar',
             'tool_calls': []
         })
-# Add a link to AI assistant in your existing dashboards
-# In user_dashboard.html and manager_dashboard.html, add:
-# <a href="/ai-assistant" class="btn btn-primary">🤖 Ask AI Assistant</a>
 
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    """Forgot password page"""
+    if request.method == 'POST':
+        email = request.form['email']
+        
+        try:
+            # Check if user exists
+            profile_response = supabase.table("profiles").select("*").eq("email", email).execute()
+            
+            if not profile_response.data:
+                # Don't reveal if user exists (security best practice)
+                flash("If an account exists with this email, you'll receive a reset link.", "info")
+                return redirect(url_for('login'))
+            
+            user = profile_response.data[0]
+            user_id = user['id']
+            
+            # Generate reset token
+            token = password_recovery.generate_reset_token(user_id)
+            
+            # Send reset email
+            password_recovery.send_reset_email(email, token)
+            
+            flash("Password reset link has been sent to your email.", "success")
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            flash("An error occurred. Please try again.", "danger")
+            return render_template('forgot_password.html')
+    
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    """Reset password using token"""
+    print(f"🔑 Validating token: {token}")
+    
+    # Validate token
+    validation = password_recovery.validate_token(token)
+    print(f"📋 Validation result: {validation}")
+    
+    if not validation["valid"]:
+        flash(f"Token validation failed: {validation['error']}", "danger")
+        return redirect(url_for('forgot_password'))
+    
+    # Get user email for display
+    user_email = validation.get("user_email", "Unknown User")
+    
+    if request.method == 'POST':
+        new_password = request.form['new_password']
+        confirm_password = request.form['confirm_password']
+        
+        # Validate passwords
+        if new_password != confirm_password:
+            flash("Passwords do not match", "danger")
+            return render_template('reset_password.html', token=token, user_email=user_email)
+        
+        if len(new_password) < 8:
+            flash("Password must be at least 8 characters", "danger")
+            return render_template('reset_password.html', token=token, user_email=user_email)
+        
+        try:
+            # Get service role key for admin operations
+            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+            admin_client = create_client(os.getenv("SUPABASE_URL"), service_key)
+            
+            # Update password using admin API
+            admin_client.auth.admin.update_user_by_id(
+                validation["user_id"],
+                {"password": new_password}
+            )
+            
+            # Mark token as used
+            password_recovery.mark_token_used(token)
+            
+            # Update profile to mark password as permanent
+            supabase.table("profiles").update({
+                "temp_password": False,
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }).eq("id", validation["user_id"]).execute()
+            
+            flash("✅ Password has been reset successfully! You can now login.", "success")
+            return redirect(url_for('login'))
+            
+        except Exception as e:
+            print(f"❌ Password reset error: {e}")
+            flash(f"Failed to reset password: {str(e)}", "danger")
+            return render_template('reset_password.html', token=token, user_email=user_email)
+    
+    return render_template('reset_password.html', token=token, user_email=user_email)
 
 if __name__ == '__main__':
     # Start scheduler in background thread
