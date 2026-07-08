@@ -8,17 +8,18 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --primary: #2c3e50;
+            --primary-dark: #1a252f;
             --bg-light: #f8f9fa;
-            --bg-dark: #1a1a2e;
+            --bg-dark: #121212;
             --card-light: #ffffff;
-            --card-dark: #16213e;
-            --text-light: #212529;
-            --text-dark: #f0f0f0;
-            --text-muted-light: #6c757d;
-            --text-muted-dark: #a0a0a0;
-            --border-light: #dee2e6;
-            --border-dark: #2d3748;
+            --card-dark: #1e1e1e;
+            --text-light: #2c3e50;
+            --text-dark: #ecf0f1;
+            --text-muted-light: #7f8c8d;
+            --text-muted-dark: #bdc3c7;
+            --border-light: #e0e0e0;
+            --border-dark: #333333;
         }
 
         [data-bs-theme="dark"] {
@@ -32,57 +33,61 @@
         }
 
         body {
-            transition: background-color 0.3s ease, color 0.3s ease;
+            transition: background-color 0.3s ease;
             min-height: 100vh;
             display: flex;
             align-items: center;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 0.875rem;
         }
 
         .login-container {
-            max-width: 450px;
+            max-width: 400px;
             width: 100%;
             margin: 0 auto;
         }
 
         .login-card {
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
             overflow: hidden;
-            transition: all 0.3s ease;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-light);
         }
 
         [data-bs-theme="dark"] .login-card {
             background-color: var(--card-dark);
-            border: 1px solid var(--border-dark);
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            border-color: var(--border-dark);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
         }
 
         [data-bs-theme="light"] .login-card {
             background-color: var(--card-light);
-            border: 1px solid var(--border-light);
+            border-color: var(--border-light);
         }
 
         .login-header {
-            background: var(--primary-gradient);
+            background: var(--primary);
             color: white;
-            padding: 40px 30px 30px;
+            padding: 25px;
             text-align: center;
         }
 
         .brand-logo {
-            font-size: 36px;
-            margin-bottom: 15px;
+            font-size: 28px;
+            margin-bottom: 12px;
         }
 
         .brand-name {
-            font-size: 28px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            font-size: 1.25rem;
+            font-weight: 600;
+            letter-spacing: -0.3px;
+            margin-bottom: 4px;
         }
 
         .brand-tagline {
+            font-size: 0.8125rem;
             opacity: 0.9;
-            font-weight: 300;
+            font-weight: 400;
         }
 
         .login-body {
@@ -91,20 +96,21 @@
 
         .theme-toggle {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: 15px;
+            right: 15px;
         }
 
         .theme-toggle-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
             border: 1px solid var(--border-light);
             background: var(--card-light);
             color: var(--text-light);
             display: flex;
             align-items: center;
             justify-content: center;
+            font-size: 0.8125rem;
         }
 
         [data-bs-theme="dark"] .theme-toggle-btn {
@@ -113,49 +119,70 @@
             color: var(--text-dark);
         }
 
+        .theme-toggle-btn:hover {
+            background: var(--border-light);
+        }
+
+        [data-bs-theme="dark"] .theme-toggle-btn:hover {
+            background: var(--border-dark);
+        }
+
         .form-label {
-            font-weight: 600;
+            font-weight: 500;
             margin-bottom: 8px;
+            font-size: 0.8125rem;
+        }
+
+        .input-group-text {
+            background: transparent;
+            border-right: none;
+            color: var(--text-muted-light);
+            font-size: 0.8125rem;
+        }
+
+        [data-bs-theme="dark"] .input-group-text {
+            color: var(--text-muted-dark);
         }
 
         .form-control {
-            border-radius: 10px;
-            padding: 12px 15px;
+            border-radius: 6px;
+            padding: 10px 12px;
             border: 1px solid var(--border-light);
-            transition: all 0.3s ease;
+            font-size: 0.8125rem;
         }
 
         [data-bs-theme="dark"] .form-control {
-            background-color: rgba(255, 255, 255, 0.05);
+            background-color: #2c2c2c;
             border-color: var(--border-dark);
             color: var(--text-dark);
         }
 
-        [data-bs-theme="dark"] .form-control:focus {
-            background-color: rgba(255, 255, 255, 0.1);
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25);
-            color: var(--text-dark);
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(44, 62, 80, 0.1);
         }
 
         .btn-primary {
-            background: var(--primary-gradient);
+            background: var(--primary);
             border: none;
-            padding: 12px;
-            border-radius: 10px;
-            font-weight: 600;
-            transition: all 0.3s ease;
+            padding: 10px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
         .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(44, 62, 80, 0.2);
         }
 
         .signup-link {
-            color: #667eea;
+            color: var(--primary);
             text-decoration: none;
             font-weight: 500;
+            font-size: 0.8125rem;
         }
 
         .signup-link:hover {
@@ -164,6 +191,7 @@
 
         .text-muted {
             color: var(--text-muted-light) !important;
+            font-size: 0.75rem;
         }
 
         [data-bs-theme="dark"] .text-muted {
@@ -171,14 +199,44 @@
         }
 
         .alert {
-            border-radius: 10px;
+            border-radius: 6px;
             border: none;
+            padding: 10px 15px;
+            font-size: 0.8125rem;
         }
 
         .manager-signup-btn {
             position: absolute;
-            top: 20px;
-            right: 70px;
+            top: 15px;
+            right: 55px;
+        }
+
+        .manager-btn {
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .manager-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .forgot-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-size: 0.75rem;
+            transition: color 0.2s ease;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary-dark);
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -192,15 +250,11 @@
 
     <!-- Manager Sign Up Button -->
     <div class="manager-signup-btn">
-        <a href="{{ url_for('signup') }}" class="btn btn-outline-primary btn-sm">
-            <i class="fas fa-crown me-1"></i>Manager Sign Up
+        <a href="{{ url_for('signup') }}" class="manager-btn">
+            <i class="fas fa-user-tie me-1"></i>Manager Sign Up
         </a>
     </div>
-    <div class="text-center mt-3">
-        <a href="{{ url_for('forgot_password') }}" class="text-decoration-none">
-            <i class="fas fa-question-circle me-1"></i>Forgot Password?
-        </a>
-     </div>
+
     <div class="container">
         <div class="login-container">
             <div class="login-card">
@@ -209,28 +263,28 @@
                         <i class="fas fa-chart-line"></i>
                     </div>
                     <h1 class="brand-name">WorkPulse</h1>
-                    <p class="brand-tagline mb-0">Productivity tracking for modern teams</p>
+                    <p class="brand-tagline">Productivity tracking for modern teams</p>
                 </div>
                 
                 <div class="login-body">
-                    <h2 class="text-center mb-4">Welcome Back</h2>
+                    <h2 class="text-center mb-3" style="font-size: 1.125rem; font-weight: 600;">Welcome Back</h2>
                     <p class="text-center text-muted mb-4">Enter your credentials to access your dashboard</p>
                     
                     {% if error %}
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
                         {{ error }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     {% endif %}
                     {% if password_changed %}
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
                         Password changed successfully! Please login with your new password.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
                     {% endif %}
                     
                     <form method="POST" action="{{ url_for('login') }}">
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label for="email" class="form-label">Email</label>
                             <div class="input-group">
                                 <span class="input-group-text">
@@ -252,6 +306,12 @@
                             </div>
                         </div>
                         
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <a href="{{ url_for('forgot_password') }}" class="forgot-link">
+                                <i class="fas fa-question-circle me-1"></i>Forgot Password?
+                            </a>
+                        </div>
+                        
                         <button type="submit" class="btn btn-primary w-100 mb-3">
                             <i class="fas fa-right-to-bracket me-2"></i>Sign In
                         </button>
@@ -266,15 +326,12 @@
         </div>
     </div>
 
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
     <script>
         // Theme Toggle
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         
-        // Check saved theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-bs-theme', savedTheme);
         updateThemeIcon(savedTheme);
@@ -292,7 +349,6 @@
             themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        // Focus on email field on page load
         document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('email').focus();
         });

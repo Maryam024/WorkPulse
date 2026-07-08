@@ -1,4 +1,3 @@
-# email_service.py
 import os
 import requests
 from typing import Optional
@@ -8,7 +7,7 @@ class EmailSender:
     def __init__(self):
         self.resend_key = os.getenv('RESEND_API_KEY')
         self.sendgrid_key = os.getenv('SENDGRID_API_KEY')
-    
+
     def send(self, to_email: str, subject: str, html: str, from_email: Optional[str] = None) -> bool:
         """Send email using available service"""
         

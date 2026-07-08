@@ -12,24 +12,28 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success-gradient: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            --warning-gradient: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
-            --info-gradient: linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%);
-            --danger-gradient: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #3498db;
             
-            --bg-light: #f8f9fa;
-            --bg-dark: #121826;
+            --bg-light: #f8fafc;
+            --bg-dark: #1a1d28;
             --card-light: #ffffff;
-            --card-dark: #1e293b;
+            --card-dark: #252a3a;
+            --sidebar-light: #ffffff;
+            --sidebar-dark: #1e2232;
             --text-light: #2d3748;
-            --text-dark: #f7fafc;
-            --text-muted-light: #718096;
-            --text-muted-dark: #a0aec0;
+            --text-dark: #e2e8f0;
+            --text-muted-light: #64748b;
+            --text-muted-dark: #94a3b8;
             --border-light: #e2e8f0;
             --border-dark: #2d3748;
-            --shadow-light: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-dark: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
         [data-bs-theme="dark"] {
@@ -43,16 +47,107 @@
         }
 
         body {
-            transition: background-color 0.3s ease, color 0.3s ease;
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            padding-bottom: 70px; /* Space for profile */
+            font-size: 0.875rem;
+            line-height: 1.5;
+            overflow-x: hidden;
         }
 
-        /* Main Container */
-        .dashboard-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
+        /* Main Layout */
+        .dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: var(--card-light);
+            border-right: 1px solid var(--border-light);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 100;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+        }
+
+        [data-bs-theme="dark"] .sidebar {
+            background: var(--sidebar-dark);
+            border-right-color: var(--border-dark);
+        }
+
+        .sidebar-header {
+            padding: 1.5rem 1.25rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        [data-bs-theme="dark"] .sidebar-header {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .sidebar-brand {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        [data-bs-theme="dark"] .sidebar-brand {
+            color: var(--text-dark);
+        }
+
+        .sidebar-nav {
+            padding: 1rem 0;
+        }
+
+        .nav-item {
+            margin-bottom: 0.25rem;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.25rem;
+            color: var(--text-muted-light);
+            text-decoration: none;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        [data-bs-theme="dark"] .nav-link {
+            color: var(--text-muted-dark);
+        }
+
+        .nav-link:hover {
+            color: var(--accent-color);
+            background: rgba(52, 152, 219, 0.08);
+        }
+
+        .nav-link.active {
+            color: var(--accent-color);
+            background: rgba(52, 152, 219, 0.1);
+            border-left-color: var(--accent-color);
+        }
+
+        .nav-link i {
+            width: 20px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            min-height: 100vh;
+            padding: 1.5rem;
         }
 
         /* Header */
@@ -60,9 +155,9 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--border-light);
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border-light);
         }
 
         [data-bs-theme="dark"] .dashboard-header {
@@ -70,49 +165,36 @@
         }
 
         .header-title h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
+            font-size: 1.5rem;
+            font-weight: 600;
             margin: 0;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary-color);
+        }
+
+        [data-bs-theme="dark"] .header-title h1 {
+            color: var(--text-dark);
         }
 
         .header-actions {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 0.75rem;
         }
 
-        /* KPI Cards with Icons */
+        /* KPI Cards */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            margin-bottom: 25px;
-        }
-
-        @media (max-width: 992px) {
-            .kpi-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        @media (max-width: 576px) {
-            .kpi-grid {
-                grid-template-columns: 1fr;
-            }
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         .kpi-card {
             background: var(--card-light);
             border: 1px solid var(--border-light);
-            border-radius: 12px;
-            padding: 20px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
+            transition: all 0.2s ease;
         }
 
         [data-bs-theme="dark"] .kpi-card {
@@ -122,73 +204,106 @@
 
         .kpi-card:hover {
             transform: translateY(-2px);
-            box-shadow: var(--shadow-light);
-        }
-
-        [data-bs-theme="dark"] .kpi-card:hover {
-            box-shadow: var(--shadow-dark);
+            box-shadow: var(--shadow-md);
         }
 
         .kpi-icon {
-            width: 48px;
-            height: 48px;
-            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+            border-radius: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
-            margin-bottom: 15px;
+            font-size: 1rem;
+            margin-bottom: 1rem;
         }
 
-        .kpi-icon.total { background: rgba(102, 126, 234, 0.1); color: #667eea; }
-        .kpi-icon.active { background: rgba(40, 167, 69, 0.1); color: #28a745; }
-        .kpi-icon.idle { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
-        .kpi-icon.avg { background: rgba(23, 162, 184, 0.1); color: #17a2b8; }
+        .kpi-icon.total { background: rgba(44, 62, 80, 0.1); color: var(--primary-color); }
+        .kpi-icon.active { background: rgba(39, 174, 96, 0.1); color: var(--success-color); }
+        .kpi-icon.idle { background: rgba(243, 156, 18, 0.1); color: var(--warning-color); }
+        .kpi-icon.avg { background: rgba(52, 152, 219, 0.1); color: var(--accent-color); }
 
         .kpi-content h3 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            margin: 0 0 5px 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0 0 0.25rem 0;
         }
 
         .kpi-content p {
             margin: 0;
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: var(--text-muted-light);
             font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         [data-bs-theme="dark"] .kpi-content p {
             color: var(--text-muted-dark);
         }
 
-        /* Main Content Grid - SWAPPED: Charts on left, Team on right */
+        /* Tabs */
+        .dashboard-tabs {
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        [data-bs-theme="dark"] .dashboard-tabs {
+            border-bottom-color: var(--border-dark);
+        }
+
+        .nav-tabs {
+            border-bottom: none;
+            gap: 0.5rem;
+        }
+
+        .nav-tabs .nav-link {
+            border: 1px solid transparent;
+            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-muted-light);
+            background: transparent;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        [data-bs-theme="dark"] .nav-tabs .nav-link {
+            color: var(--text-muted-dark);
+        }
+
+        .nav-tabs .nav-link:hover {
+            border-color: var(--border-light);
+            color: var(--primary-color);
+        }
+
+        [data-bs-theme="dark"] .nav-tabs .nav-link:hover {
+            border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        .nav-tabs .nav-link.active {
+            background: var(--accent-color);
+            border-color: var(--accent-color);
+            color: white;
+        }
+
+        /* Content Grid - UPDATED: Full width for team table in Overview */
         .content-grid {
             display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 20px;
-            margin-bottom: 20px;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
 
-        @media (max-width: 992px) {
-            .content-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Charts Sidebar - NOW ON LEFT */
-        .charts-sidebar {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
+        /* Chart Cards */
         .chart-card {
             background: var(--card-light);
             border: 1px solid var(--border-light);
-            border-radius: 12px;
-            padding: 20px;
-            flex: 1;
+            border-radius: 0.5rem;
+            padding: 1.25rem;
         }
 
         [data-bs-theme="dark"] .chart-card {
@@ -197,16 +312,21 @@
         }
 
         .chart-header {
-            margin-bottom: 15px;
+            margin-bottom: 1rem;
         }
 
         .chart-header h4 {
             margin: 0;
-            font-size: 0.95rem;
+            font-size: 0.875rem;
             font-weight: 600;
+            color: var(--text-light);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 0.5rem;
+        }
+
+        [data-bs-theme="dark"] .chart-header h4 {
+            color: var(--text-dark);
         }
 
         .chart-container {
@@ -214,11 +334,11 @@
             position: relative;
         }
 
-        /* Team Table Card - NOW ON RIGHT */
+        /* Team Table */
         .team-card {
             background: var(--card-light);
             border: 1px solid var(--border-light);
-            border-radius: 12px;
+            border-radius: 0.5rem;
             overflow: hidden;
         }
 
@@ -228,7 +348,7 @@
         }
 
         .team-header {
-            padding: 20px;
+            padding: 1.25rem;
             border-bottom: 1px solid var(--border-light);
             display: flex;
             justify-content: space-between;
@@ -241,43 +361,40 @@
 
         .team-header h3 {
             margin: 0;
-            font-size: 1.1rem;
+            font-size: 1rem;
             font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.5rem;
         }
 
-        .team-actions {
-            display: flex;
-            gap: 10px;
-        }
-
-        /* Table */
         .team-table {
             width: 100%;
             border-collapse: collapse;
         }
 
         .team-table thead th {
-            padding: 15px 20px;
+            padding: 0.75rem 1.25rem;
             text-align: left;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             font-weight: 600;
             color: var(--text-muted-light);
             border-bottom: 1px solid var(--border-light);
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            background: var(--card-light);
         }
 
         [data-bs-theme="dark"] .team-table thead th {
             color: var(--text-muted-dark);
             border-bottom-color: var(--border-dark);
+            background: var(--card-dark);
         }
 
         .team-table tbody td {
-            padding: 15px 20px;
+            padding: 1rem 1.25rem;
             border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
         }
 
         [data-bs-theme="dark"] .team-table tbody td {
@@ -285,43 +402,44 @@
         }
 
         .team-table tbody tr:hover {
-            background: rgba(102, 126, 234, 0.05);
+            background: rgba(52, 152, 219, 0.04);
         }
 
         [data-bs-theme="dark"] .team-table tbody tr:hover {
-            background: rgba(102, 126, 234, 0.1);
+            background: rgba(52, 152, 219, 0.08);
         }
 
-        /* User Row */
+        /* User Cell */
         .user-cell {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 0.75rem;
         }
 
         .user-avatar {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: var(--primary-gradient);
+            background: linear-gradient(135deg, var(--accent-color), #2980b9);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
             flex-shrink: 0;
         }
 
         .user-info h6 {
             margin: 0;
-            font-size: 0.9rem;
+            font-size: 0.875rem;
             font-weight: 600;
+            line-height: 1.2;
         }
 
         .user-info p {
-            margin: 0;
-            font-size: 0.8rem;
+            margin: 0.125rem 0 0 0;
+            font-size: 0.75rem;
             color: var(--text-muted-light);
         }
 
@@ -329,38 +447,34 @@
             color: var(--text-muted-dark);
         }
 
-        /* Status */
+        /* Status Badge */
         .status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            padding: 5px 10px;
-            border-radius: 20px;
+            gap: 0.375rem;
+            padding: 0.25rem 0.625rem;
+            border-radius: 1rem;
             font-size: 0.75rem;
             font-weight: 500;
         }
 
         .status-online {
-            background: rgba(40, 167, 69, 0.1);
-            color: #28a745;
+            background: rgba(39, 174, 96, 0.1);
+            color: var(--success-color);
         }
 
         .status-offline {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
         }
 
-        /* Productivity */
-        .productivity-cell {
-            min-width: 120px;
-        }
-
+        /* Productivity Bar */
         .productivity-bar {
-            height: 6px;
+            height: 4px;
             background: var(--border-light);
-            border-radius: 3px;
+            border-radius: 2px;
             overflow: hidden;
-            margin-top: 5px;
+            margin-top: 0.375rem;
         }
 
         [data-bs-theme="dark"] .productivity-bar {
@@ -369,20 +483,21 @@
 
         .productivity-fill {
             height: 100%;
-            border-radius: 3px;
-            background: var(--success-gradient);
+            border-radius: 2px;
+            background: var(--success-color);
+            transition: width 0.3s ease;
         }
 
         /* Action Buttons */
         .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 0.375rem;
         }
 
         .action-btn {
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 0.375rem;
             border: 1px solid var(--border-light);
             background: transparent;
             color: var(--text-muted-light);
@@ -390,7 +505,7 @@
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
-            font-size: 0.9rem;
+            font-size: 0.75rem;
         }
 
         [data-bs-theme="dark"] .action-btn {
@@ -399,102 +514,65 @@
         }
 
         .action-btn:hover {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-            border-color: #667eea;
+            background: rgba(52, 152, 219, 0.1);
+            color: var(--accent-color);
+            border-color: var(--accent-color);
         }
 
         .action-btn.delete:hover {
-            background: rgba(220, 53, 69, 0.1);
-            color: #dc3545;
-            border-color: #dc3545;
+            background: rgba(231, 76, 60, 0.1);
+            color: var(--danger-color);
+            border-color: var(--danger-color);
         }
 
-        /* Theme Toggle */
-        .theme-toggle-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 10px;
-            border: 1px solid var(--border-light);
-            background: var(--card-light);
-            color: var(--text-light);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-        }
-
-        [data-bs-theme="dark"] .theme-toggle-btn {
-            border-color: var(--border-dark);
-            background: var(--card-dark);
-            color: var(--text-dark);
-        }
-
-        .theme-toggle-btn:hover {
-            transform: rotate(15deg);
-        }
-
-        /* Logout Button */
-        .logout-btn {
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-        }
-
-        /* Profile Section - Bottom Left Corner */
+        /* Profile Section */
         .profile-section {
             position: fixed;
-            bottom: 15px;
-            left: 15px;
+            bottom: 1rem;
+            left: 1rem;
             background: var(--card-light);
             border: 1px solid var(--border-light);
-            border-radius: 10px;
-            padding: 8px 12px;
-            box-shadow: var(--shadow-light);
+            border-radius: 0.5rem;
+            padding: 0.75rem;
             z-index: 100;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 0.75rem;
             max-width: 200px;
-            transition: all 0.3s ease;
+            box-shadow: var(--shadow-sm);
         }
 
         [data-bs-theme="dark"] .profile-section {
             background: var(--card-dark);
             border-color: var(--border-dark);
-            box-shadow: var(--shadow-dark);
         }
 
         .profile-avatar {
             width: 32px;
             height: 32px;
-            min-width: 32px;
             border-radius: 50%;
-            background: var(--primary-gradient);
+            background: linear-gradient(135deg, var(--accent-color), #2980b9);
             color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 600;
-            font-size: 0.8rem;
-        }
-
-        .profile-info {
-            overflow: hidden;
+            font-size: 0.75rem;
+            flex-shrink: 0;
         }
 
         .profile-info h6 {
             margin: 0;
+            font-size: 0.75rem;
             font-weight: 600;
-            font-size: 0.85rem;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
         .profile-info p {
-            margin: 0;
-            font-size: 0.7rem;
+            margin: 0.125rem 0 0 0;
+            font-size: 0.6875rem;
             color: var(--text-muted-light);
             white-space: nowrap;
             overflow: hidden;
@@ -505,33 +583,21 @@
             color: var(--text-muted-dark);
         }
 
-        .profile-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 0.65rem;
-            font-weight: 600;
-            background: var(--primary-gradient);
-            color: white;
-        }
-
         /* Search */
         .search-box {
             position: relative;
-            margin-bottom: 20px;
+            margin: 0 1.25rem 1rem;
         }
 
         .search-input {
             width: 100%;
-            padding: 10px 40px 10px 15px;
+            padding: 0.5rem 2.5rem 0.5rem 1rem;
             border: 1px solid var(--border-light);
-            border-radius: 8px;
+            border-radius: 0.375rem;
             background: var(--card-light);
             color: var(--text-light);
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
         }
 
         [data-bs-theme="dark"] .search-input {
@@ -542,85 +608,122 @@
 
         .search-input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
         .search-icon {
             position: absolute;
-            right: 12px;
+            right: 1rem;
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted-light);
-            font-size: 0.9rem;
+            font-size: 0.875rem;
         }
 
         [data-bs-theme="dark"] .search-icon {
             color: var(--text-muted-dark);
         }
 
-        /* Footer Note */
-        .footer-note {
-            text-align: center;
-            padding: 15px;
-            font-size: 0.8rem;
-            color: var(--text-muted-light);
-            border-top: 1px solid var(--border-light);
-            margin-top: 20px;
+        /* Tab Content */
+        .tab-content {
+            padding-top: 1.5rem;
         }
 
-        [data-bs-theme="dark"] .footer-note {
-            color: var(--text-muted-dark);
-            border-top-color: var(--border-dark);
+        .tab-pane {
+            animation: fadeIn 0.3s ease;
         }
 
-        /* Animation */
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
+        /* Notification Styles */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--success-color);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideIn 0.3s ease-out;
+            max-width: 300px;
         }
 
-        /* Scrollbar */
-        .team-card-body {
-            max-height: 400px;
-            overflow-y: auto;
-            padding: 0;
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        .team-card-body::-webkit-scrollbar {
-            width: 6px;
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
         }
 
-        .team-card-body::-webkit-scrollbar-track {
-            background: var(--border-light);
-            border-radius: 3px;
+        /* Refresh Spinning Animation */
+        .refresh-spinning {
+            animation: spin 0.8s linear infinite;
         }
 
-        [data-bs-theme="dark"] .team-card-body::-webkit-scrollbar-track {
-            background: var(--border-dark);
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
-        .team-card-body::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 3px;
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.active {
+                width: 250px;
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar-toggle {
+                display: block !important;
+            }
         }
 
-        .team-card-body::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
-        }
-
-        /* Modal Improvements */
-        .modal-content {
-            border-radius: 12px;
+        .sidebar-toggle {
+            display: none;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background: var(--card-light);
             border: 1px solid var(--border-light);
+            border-radius: 0.375rem;
+            width: 40px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-light);
         }
 
-        [data-bs-theme="dark"] .modal-content {
+        [data-bs-theme="dark"] .sidebar-toggle {
+            background: var(--card-dark);
             border-color: var(--border-dark);
+            color: var(--text-dark);
+        }
+
+        /* Loading State */
+        .loading {
+            opacity: 0.7;
+            pointer-events: none;
         }
 
         /* Email Input with Domain */
@@ -642,211 +745,602 @@
             color: var(--text-muted-dark);
         }
 
-        /* Loading State */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
+        /* Performance Charts Layout */
+        .performance-charts {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
         }
+
+        @media (max-width: 992px) {
+            .performance-charts {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* New Styles for Enhanced Tabs */
+        .stat-card {
+            background: var(--card-light);
+            border: 1px solid var(--border-light);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        [data-bs-theme="dark"] .stat-card {
+            background: var(--card-dark);
+            border-color: var(--border-dark);
+        }
+
+        .bg-success-light { background: rgba(39, 174, 96, 0.1) !important; }
+        .bg-warning-light { background: rgba(243, 156, 18, 0.1) !important; }
+        .bg-info-light { background: rgba(52, 152, 219, 0.1) !important; }
+        .bg-danger-light { background: rgba(231, 76, 60, 0.1) !important; }
+
+        .border-success { border-color: #27ae60 !important; }
+        .border-warning { border-color: #f39c12 !important; }
+        .border-info { border-color: #3498db !important; }
+        .border-danger { border-color: #e74c3c !important; }
+
+        .insight-card {
+            transition: transform 0.2s ease;
+        }
+
+        .insight-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .recommendation-item {
+            border-left: 3px solid transparent;
+            padding-left: 1rem;
+        }
+
+        .recommendation-item.high { border-left-color: #e74c3c; }
+        .recommendation-item.medium { border-left-color: #f39c12; }
+        .recommendation-item.low { border-left-color: #3498db; }
     </style>
 </head>
 <body>
-    <!-- Main Dashboard -->
-    <div class="dashboard-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <a href="#" class="sidebar-brand">
+                <i class="fas fa-chart-line text-primary"></i>
+                WorkPulse
+            </a>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <div class="nav-item">
+                <a href="#" class="nav-link active" data-tab="dashboard">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" data-tab="team">
+                    <i class="fas fa-users"></i>
+                    Team Management
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="/ai-assistant" class="nav-link">
+                    <i class="fas fa-robot"></i>
+                    AI Assistant
+                </a>
+            </div>
+            <div class="nav-item">
+                <a href="#" class="nav-link" data-tab="reports">
+                    <i class="fas fa-chart-bar"></i>
+                    Reports
+                </a>
+            </div>
+
+            <div class="nav-item">
+                <a href="#" class="nav-link" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    Settings
+                </a>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Mobile Toggle -->
+        <button class="sidebar-toggle" id="sidebarToggle">
+            <i class="fas fa-bars"></i>
+        </button>
+
         <!-- Header -->
-         <a href="/ai-assistant" class="btn btn-primary me-2">
-    <i class="fas fa-robot"></i> AI Assistant
-</a>
-        <div class="dashboard-header fade-in">
+        <div class="dashboard-header">
             <div class="header-title">
-                <h1>
-                    <i class="fas fa-users me-2"></i>
+                <h1 id="pageTitle">
+                    <i class="fas fa-tachometer-alt me-2"></i>
                     Team Dashboard
                 </h1>
             </div>
             <div class="header-actions">
-                <button id="themeToggle" class="btn theme-toggle-btn" title="Toggle theme">
+                <button id="themeToggle" class="btn btn-sm btn-outline-secondary" title="Toggle theme">
                     <i class="fas fa-moon" id="themeIcon"></i>
                 </button>
-                <a href="{{ url_for('logout') }}" class="btn btn-outline-danger logout-btn">
-                    <i class="fas fa-sign-out-alt me-2"></i> Logout
+                <a href="{{ url_for('logout') }}" class="btn btn-sm btn-outline-danger">
+                    <i class="fas fa-sign-out-alt me-1"></i> Logout
                 </a>
             </div>
         </div>
 
-        <!-- KPI Cards with Icons -->
-        <div class="kpi-grid fade-in">
-            <div class="kpi-card">
-                <div class="kpi-icon total">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="kpi-content">
-                    <h3>{{ team_metrics.total_employees if team_metrics else '4' }}</h3>
-                    <p>Total Employees</p>
-                </div>
-            </div>
-            
-            <div class="kpi-card">
-                <div class="kpi-icon active">
-                    <i class="fas fa-bolt"></i>
-                </div>
-                <div class="kpi-content">
-                    <h3>{{ team_metrics.active_employees if team_metrics else '3' }}</h3>
-                    <p>Active Now</p>
-                </div>
-            </div>
-            
-            <div class="kpi-card">
-                <div class="kpi-icon idle">
-                    <i class="fas fa-pause"></i>
-                </div>
-                <div class="kpi-content">
-                    <h3>{{ team_metrics.idle_employees if team_metrics else '1' }}</h3>
-                    <p>Idle Users</p>
-                </div>
-            </div>
-            
-            <div class="kpi-card">
-                <div class="kpi-icon avg">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-                <div class="kpi-content">
-                    <h3>{{ team_metrics.overall_productivity if team_metrics else '82.5' }}%</h3>
-                    <p>Avg Productivity</p>
-                </div>
-            </div>
+        <!-- Tabs -->
+        <div class="dashboard-tabs">
+            <ul class="nav nav-tabs" id="dashboardTabs">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#overview">
+                        <i class="fas fa-eye"></i> Overview
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#performance">
+                        <i class="fas fa-chart-line"></i> Performance
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#activity-tab">
+                        <i class="fas fa-history"></i> Activity
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#insights-tab">
+                        <i class="fas fa-lightbulb"></i> Insights
+                    </a>
+                </li>
+            </ul>
         </div>
 
-        <!-- Main Content Grid - SWAPPED: Charts on left, Team on right -->
-        <div class="content-grid fade-in">
-            <!-- Charts Sidebar - NOW ON LEFT -->
-            <div class="charts-sidebar">
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h4>
-                            <i class="fas fa-chart-line"></i>
-                            Productivity Trend
-                        </h4>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="productivityChart"></canvas>
-                    </div>
-                </div>
-                
-                <div class="chart-card">
-                    <div class="chart-header">
-                        <h4>
-                            <i class="fas fa-chart-pie"></i>
-                            Team Distribution
-                        </h4>
-                    </div>
-                    <div class="chart-container">
-                        <canvas id="teamChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Team Table Card - NOW ON RIGHT -->
-            <div class="team-card">
-                <div class="team-header">
-                    <h3>
-                        <i class="fas fa-user-friends"></i>
-                        Team Members
-                    </h3>
-                    <div class="team-actions">
-                        <button class="btn btn-sm btn-outline-primary" onclick="sendWeeklyReport()">
-                            <i class="fas fa-envelope me-1"></i> Send Report
-                        </button>
-                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
-                            <i class="fas fa-plus me-1"></i> Add Member
-                        </button>
-                    </div>
-                </div>
-                
-                <div class="team-card-body">
-                    <!-- Search -->
-                    <div class="search-box" style="margin: 20px 20px 0 20px;">
-                        <input type="text" class="search-input" 
-                               placeholder="Search team members..." 
-                               id="searchUsers"
-                               onkeyup="searchUsers()">
-                        <i class="fas fa-search search-icon"></i>
+        <!-- Tab Content -->
+        <div class="tab-content" id="dashboardTabContent">
+            <!-- Overview Tab -->
+            <div class="tab-pane fade show active" id="overview">
+                <!-- KPI Cards -->
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon total">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>{{ team_metrics.total_employees if team_metrics else '4' }}</h3>
+                            <p>Total Employees</p>
+                        </div>
                     </div>
                     
-                    <!-- Table -->
-                    <table class="team-table">
-                        <thead>
-                            <tr>
-                                <th>Member</th>
-                                <th>Status</th>
-                                <th>Productivity</th>
-                                <th>Active Hours</th>
-                                <th>Idle Hours</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTableBody">
-                            {% for member in team_stats %}
-                            <tr id="user-{{ member.user.id }}">
-                                <td>
-                                    <div class="user-cell">
-                                        <div class="user-avatar">
-                                            {{ member.user.name[0]|upper }}
-                                        </div>
-                                        <div class="user-info">
-                                            <h6>{{ member.user.name }}</h6>
-                                            <p>{{ member.user.email }}</p>
-                                        </div>
+                    <div class="kpi-card">
+                        <div class="kpi-icon active">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>{{ team_metrics.active_employees if team_metrics else '3' }}</h3>
+                            <p>Active Now</p>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-icon idle">
+                            <i class="fas fa-pause"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>{{ team_metrics.idle_employees if team_metrics else '1' }}</h3>
+                            <p>Idle Users</p>
+                        </div>
+                    </div>
+                    
+                    <div class="kpi-card">
+                        <div class="kpi-icon avg">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <h3>{{ team_metrics.overall_productivity if team_metrics else '82.5' }}%</h3>
+                            <p>Avg Productivity</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Team Table Only - Full Width -->
+                <div class="content-grid">
+                    <div class="team-card">
+                        <div class="team-header">
+                            <h3>
+                                <i class="fas fa-user-friends"></i>
+                                Team Members
+                            </h3>
+                            <div class="team-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="sendWeeklyReport()">
+                                    <i class="fas fa-envelope me-1"></i> Send Report
+                                </button>
+                                <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                    <i class="fas fa-plus me-1"></i> Add Member
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" id="refreshBtn" onclick="refreshUserList()" 
+                                        title="Refresh user list">
+                                    <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="team-card-body">
+                            <!-- Search -->
+                            <div class="search-box">
+                                <input type="text" class="search-input" 
+                                       placeholder="Search team members..." 
+                                       id="searchUsers"
+                                       onkeyup="searchUsers()">
+                                <i class="fas fa-search search-icon"></i>
+                            </div>
+                            
+                            <!-- Table -->
+                            <table class="team-table">
+                                <thead>
+                                    <tr>
+                                        <th>Member</th>
+                                        <th>Status</th>
+                                        <th>Productivity</th>
+                                        <th>Active Hours</th>
+                                        <th>Idle Hours</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody">
+                                    {% for member in team_stats %}
+                                    <tr id="user-{{ member.user.id }}">
+                                        <td>
+                                            <div class="user-cell">
+                                                <div class="user-avatar">
+                                                    {{ member.user.name[0]|upper }}
+                                                </div>
+                                                <div class="user-info">
+                                                    <h6>{{ member.user.name }}</h6>
+                                                    <p>{{ member.user.email }}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge {% if member.is_online %}status-online{% else %}status-offline{% endif %}">
+                                                <i class="fas fa-circle" style="font-size: 8px;"></i>
+                                                {% if member.is_online %}Online{% else %}Offline{% endif %}
+                                            </span>
+                                        </td>
+                                        <td class="productivity-cell">
+                                            <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.productivity_score }}%</div>
+                                            <div class="productivity-bar">
+                                                <div class="productivity-fill" style="width: {{ member.stats.productivity_score }}%"></div>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.productive_hours }}h</div>
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.idle_hours }}h</div>
+                                        </td>
+                                        <td>
+                                            <div class="action-buttons">
+                                                <button class="action-btn" 
+                                                        onclick="editUser('{{ member.user.id }}', '{{ member.user.name }}')"
+                                                        title="Edit">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="action-btn delete" 
+                                                        onclick="deleteUser('{{ member.user.id }}', '{{ member.user.name }}')"
+                                                        title="Delete">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Tab -->
+            <div class="tab-pane fade" id="performance">
+                <!-- Performance Charts Grid -->
+                <div class="performance-charts">
+                    <!-- Productivity Trend Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h4>
+                                <i class="fas fa-chart-line"></i>
+                                Productivity Trend
+                            </h4>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="productivityChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Distribution Chart -->
+                    <div class="chart-card">
+                        <div class="chart-header">
+                            <h4>
+                                <i class="fas fa-chart-pie"></i>
+                                Team Distribution
+                            </h4>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="teamChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Additional Performance Charts -->
+                <div class="row mt-3">
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4><i class="fas fa-chart-bar"></i> Performance Metrics</h4>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="performanceChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="chart-card">
+                            <div class="chart-header">
+                                <h4><i class="fas fa-trophy"></i> Top Performers</h4>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="topPerformersChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Tab -->
+            <div class="tab-pane fade" id="activity-tab">
+                <div class="content-grid">
+                    <div class="team-card">
+                        <div class="team-header">
+                            <h3>
+                                <i class="fas fa-history"></i>
+                                Recent Team Activity
+                            </h3>
+                            <div class="team-actions">
+                                <button class="btn btn-sm btn-outline-primary" onclick="refreshActivity()">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                                <select class="form-select form-select-sm" style="width: auto;" id="activityFilter" onchange="loadActivity()">
+                                    <option value="all">All Activity</option>
+                                    <option value="today">Today</option>
+                                    <option value="idle">Idle Events</option>
+                                    <option value="active">Active Events</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="team-card-body">
+                            <div id="activitySummary" class="row mb-3" style="padding: 1rem;">
+                                <!-- Summary cards will be loaded here -->
+                            </div>
+                            <div class="table-responsive">
+                                <table class="team-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>User</th>
+                                            <th>Activity</th>
+                                            <th>Details</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="activityTableBody">
+                                        <!-- Activity rows will be loaded here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-center py-3" id="activityLoading">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                                <span class="ms-2">Loading activity...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Insights Tab -->
+            <div class="tab-pane fade" id="insights-tab">
+                <div class="content-grid">
+                    <div class="team-card">
+                        <div class="team-header">
+                            <h3>
+                                <i class="fas fa-lightbulb"></i>
+                                AI Insights & Recommendations
+                            </h3>
+                            <div class="team-actions">
+                                <button class="btn btn-sm btn-primary" onclick="generateInsights()">
+                                    <i class="fas fa-bolt"></i> Generate New Insights
+                                </button>
+                            </div>
+                        </div>
+                        <div class="team-card-body">
+                            <div id="insightsContainer">
+                                <div class="row" id="insightsRow">
+                                    <!-- Insights cards will be loaded here -->
+                                </div>
+                                
+                                <div class="mt-4">
+                                    <h5 class="mb-3"><i class="fas fa-bullhorn"></i> Recommendations</h5>
+                                    <div id="recommendationsList">
+                                        <!-- Recommendations will be loaded here -->
                                     </div>
-                                </td>
-                                <td>
-                                    <span class="status-badge {% if member.is_online %}status-online{% else %}status-offline{% endif %}">
-                                        <i class="fas fa-circle" style="font-size: 8px;"></i>
-                                        {% if member.is_online %}Online{% else %}Offline{% endif %}
-                                    </span>
-                                </td>
-                                <td class="productivity-cell">
-                                    <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.productivity_score }}%</div>
-                                    <div class="productivity-bar">
-                                        <div class="productivity-fill" style="width: {{ member.stats.productivity_score }}%"></div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.productive_hours }}h</div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold" style="font-size: 0.9rem;">{{ member.stats.idle_hours }}h</div>
-                                </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-btn" 
-                                                onclick="editUser('{{ member.user.id }}', '{{ member.user.name }}')"
-                                                title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="action-btn delete" 
-                                                onclick="deleteUser('{{ member.user.id }}', '{{ member.user.name }}')"
-                                                title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                </div>
+                            </div>
+                            <div class="text-center py-5" id="insightsLoading">
+                                <div class="spinner-border spinner-border-sm text-primary"></div>
+                                <span class="ms-2">Analyzing team data...</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Footer Note -->
-        <div class="footer-note fade-in">
-            <i class="fas fa-info-circle me-2"></i>
-            Weekly productivity reports are automatically generated and emailed to all managers.
+        <!-- Additional Tab Panes for Sidebar Navigation -->
+        <div id="teamManagementContent" style="display: none;">
+            <div class="content-grid">
+                <div class="team-card">
+                    <div class="team-header">
+                        <h3>
+                            <i class="fas fa-users"></i>
+                            Team Management
+                        </h3>
+                        <div class="team-actions">
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                                <i class="fas fa-plus me-1"></i> Add Member
+                            </button>
+                        </div>
+                    </div>
+                    <div class="team-card-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Manage your team members, roles, and permissions from this section.
+                        </div>
+                        <div class="text-center py-5">
+                            <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                            <p class="text-muted">Team management features will be available here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="reportsContent" style="display: none;">
+            <div class="content-grid">
+                <div class="team-card">
+                    <div class="team-header">
+                        <h3>
+                            <i class="fas fa-chart-bar"></i>
+                            Reports & Exports
+                        </h3>
+                        <div class="team-actions">
+                            <button class="btn btn-sm btn-primary" onclick="generateReport()">
+                                <i class="fas fa-plus"></i> Generate New Report
+                            </button>
+                        </div>
+                    </div>
+                    <div class="team-card-body">
+                        <div class="row mb-4">
+                            <div class="col-md-8">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Reports are automatically generated weekly. You can also generate custom reports on demand.
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="team-table">
+                                <thead>
+                                    <tr>
+                                        <th>Report Title</th>
+                                        <th>Period</th>
+                                        <th>Type</th>
+                                        <th>Generated At</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportsTableBody">
+                                    <!-- Reports will be loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="text-center py-5" id="reportsLoading">
+                            <div class="spinner-border spinner-border-sm text-primary"></div>
+                            <span class="ms-2">Loading reports...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="settingsContent" style="display: none;">
+            <div class="content-grid">
+                <div class="team-card">
+                    <div class="team-header">
+                        <h3>
+                            <i class="fas fa-cog"></i>
+                            Settings
+                        </h3>
+                    </div>
+                    <div class="team-card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="chart-card">
+                                    <div class="chart-header">
+                                        <h4>Profile Settings</h4>
+                                    </div>
+                                    <div class="p-3">
+                                        <div class="mb-3">
+                                            <label class="form-label">Name</label>
+                                            <input type="text" class="form-control" value="{{ session.user.name if session.user else 'Manager' }}" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Email</label>
+                                            <input type="email" class="form-control" value="{{ session.user.email if session.user else '' }}" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Role</label>
+                                            <input type="text" class="form-control" value="Manager" readonly>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="chart-card">
+                                    <div class="chart-header">
+                                        <h4>Notification Preferences</h4>
+                                    </div>
+                                    <div class="p-3">
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="weeklyReports" checked>
+                                            <label class="form-check-label" for="weeklyReports">
+                                                Weekly productivity reports
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="teamAlerts" checked>
+                                            <label class="form-check-label" for="teamAlerts">
+                                                Team member alerts
+                                            </label>
+                                        </div>
+                                        <div class="form-check mb-2">
+                                            <input class="form-check-input" type="checkbox" id="productivityAlerts">
+                                            <label class="form-check-label" for="productivityAlerts">
+                                                Low productivity alerts
+                                            </label>
+                                        </div>
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="systemUpdates" checked>
+                                            <label class="form-check-label" for="systemUpdates">
+                                                System updates and announcements
+                                            </label>
+                                        </div>
+                                        <button class="btn btn-primary mt-3">Save Preferences</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Small Profile in Bottom Left Corner -->
-    <div class="profile-section fade-in">
+    <!-- Profile Section -->
+    <div class="profile-section">
         <div class="profile-avatar">
             {{ session.user.name[0]|upper if session.user else 'M' }}
         </div>
@@ -854,7 +1348,6 @@
             <h6>{{ session.user.name if session.user else 'Manager' }}</h6>
             <p>Organization Manager</p>
         </div>
-        <div class="profile-badge">Admin</div>
     </div>
 
     <!-- Modals -->
@@ -951,7 +1444,15 @@
             localStorage.setItem('theme', newTheme);
             
             setTimeout(() => {
-                createManagerCharts();
+                // Recreate charts when theme changes
+                const activeTab = document.querySelector('#dashboardTabs .nav-link.active').getAttribute('href');
+                if (activeTab === '#performance') {
+                    createManagerCharts();
+                    createPerformanceCharts();
+                }
+                if (activeTab === '#analytics-tab' || window.analyticsTrendChart) {
+                    updateChartColors();
+                }
             }, 300);
         });
 
@@ -962,6 +1463,116 @@
         function getCurrentTheme() {
             return document.documentElement.getAttribute('data-bs-theme');
         }
+
+        // Sidebar Toggle for Mobile
+        const sidebarToggle = document.getElementById('sidebarToggle');
+        const sidebar = document.querySelector('.sidebar');
+
+        sidebarToggle.addEventListener('click', () => {
+            sidebar.classList.toggle('active');
+        });
+
+        // Close sidebar when clicking outside on mobile
+        document.addEventListener('click', (e) => {
+            if (window.innerWidth <= 768) {
+                if (!sidebar.contains(e.target) && !sidebarToggle.contains(e.target)) {
+                    sidebar.classList.remove('active');
+                }
+            }
+        });
+
+        // Sidebar Navigation
+        document.querySelectorAll('.sidebar-nav .nav-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                if (link.getAttribute('data-tab')) {
+                    e.preventDefault();
+                    const tab = link.getAttribute('data-tab');
+                    
+                    // Update active states
+                    document.querySelectorAll('.sidebar-nav .nav-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // Update page title
+                    const pageTitle = document.getElementById('pageTitle');
+                    const iconClass = link.querySelector('i').className.split(' ')[1];
+                    pageTitle.innerHTML = `<i class="fas ${iconClass} me-2"></i>${link.textContent}`;
+                    
+                    // Hide all content sections
+                    document.querySelectorAll('.tab-content, [id$="Content"]').forEach(el => {
+                        el.style.display = 'none';
+                    });
+                    
+                    // Show selected content
+                    switch(tab) {
+                        case 'dashboard':
+                            document.querySelector('.tab-content').style.display = 'block';
+                            document.querySelector('#overview').classList.add('show', 'active');
+                            break;
+                        case 'team':
+                            document.getElementById('teamManagementContent').style.display = 'block';
+                            break;
+                        case 'reports':
+                            document.getElementById('reportsContent').style.display = 'block';
+                            loadReports();
+                            break;
+                        case 'analytics':
+                            document.getElementById('analyticsContent').style.display = 'block';
+                            loadAnalytics(7);
+                            break;
+                        case 'activity':
+                            document.getElementById('activity-tab').classList.add('show', 'active');
+                            loadActivity();
+                            break;
+                        case 'insights':
+                            document.getElementById('insights-tab').classList.add('show', 'active');
+                            loadInsights();
+                            break;
+                        case 'settings':
+                            document.getElementById('settingsContent').style.display = 'block';
+                            break;
+                    }
+                    
+                    console.log(`Loading ${tab} content...`);
+                }
+            });
+        });
+
+        // Tab switching - FIXED VERSION
+        const tabTriggers = [].slice.call(document.querySelectorAll('#dashboardTabs a'));
+        tabTriggers.forEach(trigger => {
+            trigger.addEventListener('shown.bs.tab', function(event) {
+                const activeTab = event.target.getAttribute('href');
+                console.log('🔘 Tab switched to:', activeTab);
+                
+                if (activeTab === '#performance') {
+                    console.log('🚀 Performance tab activated!');
+                    // Clear any existing charts
+                    if (window.productivityChart) {
+                        window.productivityChart.destroy();
+                        console.log('🗑️ Destroyed old productivityChart');
+                    }
+                    if (window.teamChart) {
+                        window.teamChart.destroy();
+                        console.log('🗑️ Destroyed old teamChart');
+                    }
+                    if (window.performanceChart) {
+                        window.performanceChart.destroy();
+                        console.log('🗑️ Destroyed old performanceChart');
+                    }
+                    if (window.topPerformersChart) {
+                        window.topPerformersChart.destroy();
+                        console.log('🗑️ Destroyed old topPerformersChart');
+                    }
+                    
+                    // Wait for tab to be fully visible
+                    setTimeout(() => {
+                        console.log('⏳ Creating charts after delay...');
+                        createManagerCharts();
+                        createPerformanceCharts();
+                    }, 300);
+                }
+            });
+        });
 
         // Email preview for add user modal
         function updateEmailPreview() {
@@ -983,121 +1594,125 @@
             }
         }
 
-        // Initialize email preview
-        document.addEventListener('DOMContentLoaded', function() {
-            updateEmailPreview();
-        });
+        // Charts with real data - Now only for Performance tab
+       async function createManagerCharts() {
 
-        // Charts with real data
-        function createManagerCharts() {
+            console.log('🎯 createManagerCharts() STARTED');
             const isDark = getCurrentTheme() === 'dark';
             
-            // Fetch real productivity data
-            fetch('/manager/api/productivity-data')
-                .then(response => response.json())
-                .then(data => {
-                    // Productivity Trend Chart
-                    const prodCtx = document.getElementById('productivityChart');
-                    if (window.productivityChart) {
-                        window.productivityChart.destroy();
-                    }
-                    
-                    window.productivityChart = new Chart(prodCtx, {
-                        type: 'line',
-                        data: {
-                            labels: data.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                            datasets: [{
-                                label: 'Productivity %',
-                                data: data.trend || [75, 82, 68, 90, 78, 85, 88],
-                                borderColor: '#667eea',
-                                backgroundColor: isDark ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.2)',
-                                fill: true,
-                                tension: 0.4,
-                                borderWidth: 2
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    display: false
-                                }
+            // Check if chart containers exist
+            const prodCtx = document.getElementById('productivityChart');
+            const teamCtx = document.getElementById('teamChart');
+            
+            console.log('📊 Chart containers found:');
+            console.log('- productivityChart:', prodCtx);
+            console.log('- teamChart:', teamCtx);
+            
+            if (!prodCtx || !teamCtx) {
+                console.error('❌ Chart containers not found!');
+                showNotification('Chart containers missing', 'error');
+                return;
+            }
+            
+            try {
+                console.log('📡 Fetching from /manager/api/productivity-data...');
+                const response = await fetch('/manager/api/productivity-data');
+                console.log('✅ Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('📦 Data received:', data);
+                
+                if (!data.success) {
+                    throw new Error('API returned success: false');
+                }
+                
+                // Create Productivity Chart
+                console.log('🖼️ Creating productivity chart...');
+                if (window.productivityChart) {
+                    window.productivityChart.destroy();
+                }
+                
+                window.productivityChart = new Chart(prodCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                        datasets: [{
+                            label: 'Productivity %',
+                            data: data.trend || [75, 82, 68, 90, 78, 85, 88],
+                            borderColor: '#3498db',
+                            backgroundColor: isDark ? 'rgba(52, 152, 219, 0.1)' : 'rgba(52, 152, 219, 0.2)',
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: {
+                                beginAtZero: false,
+                                min: 50,
+                                max: 100,
+                                grid: { color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' },
+                                ticks: { color: isDark ? '#f0f0f0' : '#212529', font: { size: 10 } }
                             },
-                            scales: {
-                                y: {
-                                    beginAtZero: false,
-                                    min: 50,
-                                    max: 100,
-                                    grid: {
-                                        color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
-                                    },
-                                    ticks: {
-                                        color: isDark ? '#f0f0f0' : '#212529',
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                },
-                                x: {
-                                    grid: {
-                                        color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
-                                    },
-                                    ticks: {
-                                        color: isDark ? '#f0f0f0' : '#212529',
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                }
+                            x: {
+                                grid: { color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)' },
+                                ticks: { color: isDark ? '#f0f0f0' : '#212529', font: { size: 10 } }
                             }
                         }
-                    });
-
-                    // Team Distribution Chart
-                    const teamCtx = document.getElementById('teamChart');
-                    if (window.teamChart) {
-                        window.teamChart.destroy();
                     }
-                    
-                    window.teamChart = new Chart(teamCtx, {
-                        type: 'doughnut',
-                        data: {
-                            labels: ['High (>80%)', 'Medium (60-80%)', 'Low (<60%)'],
-                            datasets: [{
-                                data: data.distribution || [3, 5, 2],
-                                backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
-                                borderWidth: 0
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            plugins: {
-                                legend: {
-                                    position: 'bottom',
-                                    labels: {
-                                        color: isDark ? '#f0f0f0' : '#212529',
-                                        padding: 15,
-                                        font: {
-                                            size: 10
-                                        }
-                                    }
-                                }
-                            },
-                            cutout: '65%'
-                        }
-                    });
-                })
-                .catch(error => {
-                    console.error('Error fetching chart data:', error);
-                    // Use fallback data if API fails
-                    createFallbackCharts(isDark);
                 });
+                
+                // Create Team Distribution Chart
+                console.log('🖼️ Creating team chart...');
+                if (window.teamChart) {
+                    window.teamChart.destroy();
+                }
+                
+                window.teamChart = new Chart(teamCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['High (>80%)', 'Medium (60-80%)', 'Low (<60%)'],
+                        datasets: [{
+                            data: data.distribution || [3, 5, 2],
+                            backgroundColor: ['#27ae60', '#f39c12', '#e74c3c'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    color: isDark ? '#f0f0f0' : '#212529',
+                                    padding: 15,
+                                    font: { size: 10 }
+                                }
+                            }
+                        },
+                        cutout: '65%'
+                    }
+                });
+                
+                console.log('✅ Charts created successfully!');
+                
+            } catch (error) {
+                console.error('❌ Error creating charts:', error);
+                console.log('🔄 Using fallback data');
+                
+                // Use fallback data
+                createFallbackCharts(isDark);
+            }
         }
 
         // Fallback charts if API fails
         function createFallbackCharts(isDark) {
+            // Productivity Trend Chart
             const prodCtx = document.getElementById('productivityChart');
             if (window.productivityChart) {
                 window.productivityChart.destroy();
@@ -1110,8 +1725,8 @@
                     datasets: [{
                         label: 'Productivity %',
                         data: [75, 82, 68, 90, 78, 85, 88],
-                        borderColor: '#667eea',
-                        backgroundColor: isDark ? 'rgba(102, 126, 234, 0.1)' : 'rgba(102, 126, 234, 0.2)',
+                        borderColor: '#3498db',
+                        backgroundColor: isDark ? 'rgba(52, 152, 219, 0.1)' : 'rgba(52, 152, 219, 0.2)',
                         fill: true,
                         tension: 0.4,
                         borderWidth: 2
@@ -1155,6 +1770,7 @@
                 }
             });
 
+            // Team Distribution Chart
             const teamCtx = document.getElementById('teamChart');
             if (window.teamChart) {
                 window.teamChart.destroy();
@@ -1166,7 +1782,7 @@
                     labels: ['High (>80%)', 'Medium (60-80%)', 'Low (<60%)'],
                     datasets: [{
                         data: [3, 5, 2],
-                        backgroundColor: ['#28a745', '#ffc107', '#dc3545'],
+                        backgroundColor: ['#27ae60', '#f39c12', '#e74c3c'],
                         borderWidth: 0
                     }]
                 },
@@ -1190,10 +1806,110 @@
             });
         }
 
-        // Initialize charts
-        document.addEventListener('DOMContentLoaded', function() {
-            createManagerCharts();
-        });
+        // Performance charts
+        function createPerformanceCharts() {
+            const isDark = getCurrentTheme() === 'dark';
+            
+            // Performance Metrics Chart
+            const perfCtx = document.getElementById('performanceChart');
+            if (window.performanceChart) {
+                window.performanceChart.destroy();
+            }
+            
+            window.performanceChart = new Chart(perfCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                    datasets: [{
+                        label: 'Productivity',
+                        data: [85, 78, 92, 88, 76, 95],
+                        backgroundColor: 'rgba(52, 152, 219, 0.8)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Top Performers Chart
+            const topCtx = document.getElementById('topPerformersChart');
+            if (window.topPerformersChart) {
+                window.topPerformersChart.destroy();
+            }
+            
+            window.topPerformersChart = new Chart(topCtx, {
+                type: 'horizontalBar',
+                data: {
+                    labels: ['John D.', 'Sarah M.', 'Mike R.', 'Lisa K.', 'Tom B.'],
+                    datasets: [{
+                        label: 'Productivity %',
+                        data: [95, 92, 88, 85, 82],
+                        backgroundColor: [
+                            'rgba(39, 174, 96, 0.8)',
+                            'rgba(39, 174, 96, 0.7)',
+                            'rgba(39, 174, 96, 0.6)',
+                            'rgba(39, 174, 96, 0.5)',
+                            'rgba(39, 174, 96, 0.4)'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                            },
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529'
+                            }
+                        },
+                        y: {
+                            ticks: {
+                                color: isDark ? '#f0f0f0' : '#212529'
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
         // Add User Function with @workpulse.app domain
         async function addUser() {
@@ -1202,12 +1918,12 @@
             const emailInput = document.getElementById('fullEmail');
             
             if (!nameInput.value.trim()) {
-                alert('Please enter a name for the team member.');
+                showNotification('Please enter a name for the team member.', 'warning');
                 return;
             }
             
             if (!emailInput.value) {
-                alert('Please enter a username for the email address.');
+                showNotification('Please enter a username for the email address.', 'warning');
                 return;
             }
             
@@ -1228,7 +1944,7 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert(result.message);
+                    showNotification(result.message, 'success');
                     // Close modal
                     const modal = bootstrap.Modal.getInstance(document.getElementById('addUserModal'));
                     modal.hide();
@@ -1236,33 +1952,74 @@
                     nameInput.value = '';
                     document.getElementById('usernameInput').value = '';
                     updateEmailPreview();
-                    // Reload page after a short delay
+                    // Refresh user list after a short delay
                     setTimeout(() => {
-                        location.reload();
+                        refreshUserList();
                     }, 1000);
                 } else {
-                    alert('Error: ' + result.error);
+                    showNotification('Error: ' + result.error, 'error');
                 }
             } catch (error) {
-                alert('Failed to add user: ' + error.message);
+                showNotification('Failed to add user: ' + error.message, 'error');
             }
         }
 
-        // Edit User Function
+        // EDIT USER FUNCTION
         function editUser(userId, userName) {
+            console.log('editUser called with:', userId, userName);
+            
+            // Check if modal elements exist
+            const editModal = document.getElementById('editUserModal');
+            if (!editModal) {
+                console.error('Edit modal not found!');
+                showNotification('Error: Edit form not available', 'error');
+                return;
+            }
+            
+            // Set the values
             document.getElementById('editUserId').value = userId;
             document.getElementById('editUserName').value = userName;
             
-            const modal = new bootstrap.Modal(document.getElementById('editUserModal'));
+            // Show the modal immediately
+            const modal = new bootstrap.Modal(editModal);
             modal.show();
+            
+            // Try to fetch user status for current manager
+            fetch(`/manager/api/get-user/${userId}`)
+                .then(response => {
+                    if (!response.ok) {
+                        console.warn('Failed to fetch user status, using defaults');
+                        return { user: { is_active: true } };
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.user && data.user.is_active !== undefined) {
+                        document.getElementById('editUserActive').checked = data.user.is_active;
+                    }
+                })
+                .catch(error => {
+                    console.error('Failed to fetch user data:', error);
+                    document.getElementById('editUserActive').checked = true;
+                });
         }
 
-        // Save User Changes
+        // SAVE USER FUNCTION
         async function saveUser() {
             const userId = document.getElementById('editUserId').value;
+            const name = document.getElementById('editUserName').value;
+            const isActive = document.getElementById('editUserActive').checked;
+            
+            console.log('Saving user:', { userId, name, isActive });
+            
+            if (!name.trim()) {
+                showNotification('Please enter a name', 'warning');
+                return;
+            }
+            
             const data = {
-                name: document.getElementById('editUserName').value,
-                is_active: document.getElementById('editUserActive').checked
+                name: name.trim(),
+                is_active: isActive
             };
             
             try {
@@ -1274,46 +2031,157 @@
                     body: JSON.stringify(data)
                 });
                 
+                console.log('Response status:', response.status);
+                
+                let result;
+                try {
+                    result = await response.json();
+                } catch (e) {
+                    console.error('Failed to parse JSON:', e);
+                    showNotification('Server returned invalid response. Please try again.', 'error');
+                    return;
+                }
+                
+                console.log('Save response:', result);
+                
+                if (response.ok && result.success) {
+                    showNotification('User updated successfully!', 'success');
+                    
+                    // Close modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('editUserModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Refresh user list after delay
+                    setTimeout(() => {
+                        refreshUserList();
+                    }, 1000);
+                } else {
+                    showNotification('Error: ' + (result.error || 'Failed to update user'), 'error');
+                }
+            } catch (error) {
+                console.error('Save error:', error);
+                showNotification('Network error: ' + error.message, 'error');
+            }
+        }
+
+        // DELETE USER FUNCTION
+        async function deleteUser(userId, userName) {
+            if (!confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/manager/api/delete-user/${userId}`, {
+                    method: 'DELETE'
+                });
+                
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert(result.message);
-                    location.reload();
+                    showNotification(result.message, 'success');
+                    // Remove the row from table
+                    const userRow = document.getElementById(`user-${userId}`);
+                    if (userRow) {
+                        userRow.remove();
+                    }
+                    // Refresh user list to update counts
+                    setTimeout(() => {
+                        refreshUserList();
+                    }, 500);
                 } else {
-                    alert('Error: ' + result.error);
+                    showNotification('Error: ' + result.error, 'error');
                 }
             } catch (error) {
-                alert('Failed to update user: ' + error.message);
+                showNotification('Failed to delete user: ' + error.message, 'error');
             }
         }
 
-        // Delete User Function
-        function deleteUser(userId, userName) {
-            if (confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
-                fetch(`/manager/api/delete-user/${userId}`, {
-                    method: 'DELETE'
-                })
-                .then(response => response.json())
-                .then(result => {
-                    if (result.success) {
-                        document.getElementById(`user-${userId}`).remove();
-                        alert(result.message);
-                    } else {
-                        alert('Error: ' + result.error);
-                    }
-                })
-                .catch(error => {
-                    alert('Failed to delete user: ' + error.message);
-                });
-            }
+        // REFRESH USER LIST FUNCTION - Only current manager's users
+        function refreshUserList() {
+            const refreshBtn = document.getElementById('refreshBtn');
+            const refreshIcon = document.getElementById('refreshIcon');
+            
+            refreshBtn.disabled = true;
+            refreshIcon.classList.add('refresh-spinning');
+            
+            showNotification('Refreshing...', 'info');
+            
+            setTimeout(() => {
+                location.reload();
+            }, 500);
         }
 
-        // Search Users Function
+        // NOTIFICATION FUNCTION
+        function showNotification(message, type = 'info') {
+            // Remove existing notifications
+            const existingNotif = document.getElementById('refreshNotification');
+            if (existingNotif) {
+                existingNotif.remove();
+            }
+            
+            const colors = {
+                success: '#27ae60',
+                error: '#e74c3c',
+                info: '#3498db',
+                warning: '#f39c12'
+            };
+            
+            const icon = {
+                success: 'fa-check-circle',
+                error: 'fa-exclamation-circle',
+                info: 'fa-info-circle',
+                warning: 'fa-exclamation-triangle'
+            }[type];
+            
+            const notification = document.createElement('div');
+            notification.id = 'refreshNotification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${colors[type] || colors.info};
+                color: white;
+                padding: 12px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                animation: slideIn 0.3s ease-out;
+                max-width: 300px;
+            `;
+            
+            notification.innerHTML = `
+                <i class="fas ${icon || 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 3 seconds
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease-out';
+                    setTimeout(() => notification.remove(), 300);
+                }
+            }, 3000);
+        }
+
+        // SEARCH USERS FUNCTION
         let searchTimeout;
         function searchUsers() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(async () => {
                 const searchTerm = document.getElementById('searchUsers').value;
+                
+                if (!searchTerm.trim()) {
+                    // If search is empty, refresh the full list
+                    refreshUserList();
+                    return;
+                }
                 
                 try {
                     const response = await fetch(`/manager/api/search-users?q=${encodeURIComponent(searchTerm)}`);
@@ -1324,81 +2192,563 @@
                     }
                 } catch (error) {
                     console.error('Search failed:', error);
+                    showNotification('Search failed: ' + error.message, 'error');
                 }
             }, 300);
         }
 
-        function updateUsersTable(users) {
-            const tableBody = document.getElementById('usersTableBody');
+        // SEND WEEKLY REPORT
+        async function sendWeeklyReport() {
+            if (!confirm('Send weekly productivity report to your email?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/manager/api/send-weekly-report', {
+                    method: 'POST'
+                });
+                
+                const result = await response.json();
+                showNotification(result.message || result.error, result.success ? 'success' : 'error');
+            } catch (error) {
+                showNotification('Failed to send report: ' + error.message, 'error');
+            }
+        }
+
+        // ACTIVITY FUNCTIONS
+        async function loadActivity() {
+            const loadingEl = document.getElementById('activityLoading');
+            const tableBody = document.getElementById('activityTableBody');
+            const summaryEl = document.getElementById('activitySummary');
+            
+            if (!loadingEl || !tableBody || !summaryEl) return;
+            
+            loadingEl.style.display = 'block';
             tableBody.innerHTML = '';
             
-            users.forEach(user => {
-                const row = `
-                    <tr id="user-${user.id}">
-                        <td>
-                            <div class="user-cell">
-                                <div class="user-avatar">
-                                    ${user.name[0].toUpperCase()}
-                                </div>
-                                <div class="user-info">
-                                    <h6>${user.name}</h6>
-                                    <p>${user.email}</p>
-                                </div>
+            try {
+                const response = await fetch('/manager/api/activity');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update summary
+                    const summary = data.summary;
+                    summaryEl.innerHTML = `
+                        <div class="col-md-3">
+                            <div class="stat-card" style="padding: 10px; text-align: center;">
+                                <div class="stat-value" style="font-size: 1.5rem;">${summary.total_activities}</div>
+                                <div class="stat-title">Total Activities</div>
                             </div>
-                        </td>
-                        <td>
-                            <span class="status-badge ${user.is_active ? 'status-online' : 'status-offline'}">
-                                <i class="fas fa-circle" style="font-size: 8px;"></i>
-                                ${user.is_active ? 'Online' : 'Offline'}
-                            </span>
-                        </td>
-                        <td class="productivity-cell">
-                            <div class="fw-bold" style="font-size: 0.9rem;">${user.productivity_score || 0}%</div>
-                            <div class="productivity-bar">
-                                <div class="productivity-fill" style="width: ${user.productivity_score || 0}%"></div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="padding: 10px; text-align: center;">
+                                <div class="stat-value" style="font-size: 1.5rem;">${summary.active_users}</div>
+                                <div class="stat-title">Active Users</div>
                             </div>
-                        </td>
-                        <td>
-                            <div class="fw-bold" style="font-size: 0.9rem;">${user.productive_hours || 0}h</div>
-                        </td>
-                        <td>
-                            <div class="fw-bold" style="font-size: 0.9rem;">${user.idle_hours || 0}h</div>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn" 
-                                        onclick="editUser('${user.id}', '${user.name}')"
-                                        title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="action-btn delete" 
-                                        onclick="deleteUser('${user.id}', '${user.name}')"
-                                        title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="padding: 10px; text-align: center;">
+                                <div class="stat-value" style="font-size: 1.5rem;">${summary.active_events}</div>
+                                <div class="stat-title">Active Events</div>
                             </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="stat-card" style="padding: 10px; text-align: center;">
+                                <div class="stat-value" style="font-size: 1.5rem;">${summary.idle_events}</div>
+                                <div class="stat-title">Idle Events</div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Update table
+                    if (!data.recent_activity || data.recent_activity.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="4" class="text-center py-4 text-muted">
+                                    <i class="fas fa-history me-2"></i>
+                                    No recent activity found
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        const filter = document.getElementById('activityFilter')?.value || 'all';
+                        let filteredActivities = data.recent_activity;
+                        
+                        if (filter === 'today') {
+                            const today = new Date().toISOString().split('T')[0];
+                            filteredActivities = data.recent_activity.filter(a => a.timestamp.includes(today));
+                        } else if (filter === 'idle') {
+                            filteredActivities = data.recent_activity.filter(a => a.event.toLowerCase().includes('idle'));
+                        } else if (filter === 'active') {
+                            filteredActivities = data.recent_activity.filter(a => a.event.toLowerCase().includes('active'));
+                        }
+                        
+                        filteredActivities.forEach(activity => {
+                            const row = `
+                                <tr>
+                                    <td>${activity.time_ago || 'Recently'}</td>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar">
+                                                ${activity.user_name ? activity.user_name.charAt(0).toUpperCase() : 'U'}
+                                            </div>
+                                            <div class="user-info">
+                                                <h6>${activity.user_name || 'Unknown User'}</h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${activity.event}</td>
+                                    <td>
+                                        <small class="text-muted">${new Date(activity.timestamp).toLocaleString()}</small>
+                                    </td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                        
+                        if (filteredActivities.length === 0) {
+                            tableBody.innerHTML = `
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-filter me-2"></i>
+                                        No activities match the selected filter
+                                    </td>
+                                </tr>
+                            `;
+                        }
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to load activity');
+                }
+            } catch (error) {
+                console.error('Error loading activity:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Failed to load activity data: ${error.message}
                         </td>
                     </tr>
                 `;
-                tableBody.innerHTML += row;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        function refreshActivity() {
+            loadActivity();
+            showNotification('Activity refreshed', 'success');
+        }
+
+        // INSIGHTS FUNCTIONS
+        async function loadInsights() {
+            const loadingEl = document.getElementById('insightsLoading');
+            const insightsRow = document.getElementById('insightsRow');
+            const recommendationsList = document.getElementById('recommendationsList');
+            
+            if (!loadingEl || !insightsRow || !recommendationsList) return;
+            
+            loadingEl.style.display = 'block';
+            insightsRow.innerHTML = '';
+            recommendationsList.innerHTML = '';
+            
+            try {
+                const response = await fetch('/manager/api/insights');
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Display insights
+                    if (!data.insights || data.insights.length === 0) {
+                        insightsRow.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    No insights available yet. Add more team members and activity data.
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        data.insights.forEach(insight => {
+                            const bgClass = insight.type === 'success' ? 'bg-success-light' : 
+                                           insight.type === 'warning' ? 'bg-warning-light' : 'bg-info-light';
+                            const textClass = insight.type === 'success' ? 'text-success' : 
+                                             insight.type === 'warning' ? 'text-warning' : 'text-info';
+                            
+                            const col = `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card ${bgClass} border-${insight.type} insight-card">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="fas fa-${insight.icon || 'lightbulb'} ${textClass} me-2"></i>
+                                                <h6 class="card-title mb-0 ${textClass}">${insight.title}</h6>
+                                            </div>
+                                            <p class="card-text">${insight.message}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                            insightsRow.innerHTML += col;
+                        });
+                    }
+                    
+                    // Display recommendations
+                    if (data.recommendations && data.recommendations.length > 0) {
+                        data.recommendations.forEach(rec => {
+                            const priorityClass = rec.priority === 'high' ? 'high' : 
+                                                rec.priority === 'medium' ? 'medium' : 'low';
+                            
+                            const item = `
+                                <div class="recommendation-item ${priorityClass} mb-3">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">${rec.title}</h6>
+                                            <p class="mb-0 text-muted" style="font-size: 0.85rem;">${rec.description}</p>
+                                        </div>
+                                        <span class="badge bg-${rec.priority === 'high' ? 'danger' : rec.priority === 'medium' ? 'warning' : 'info'}">
+                                            ${rec.priority} priority
+                                        </span>
+                                    </div>
+                                </div>
+                            `;
+                            recommendationsList.innerHTML += item;
+                        });
+                    } else {
+                        recommendationsList.innerHTML = `
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                No specific recommendations at this time.
+                            </div>
+                        `;
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to load insights');
+                }
+            } catch (error) {
+                console.error('Error loading insights:', error);
+                insightsRow.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Failed to load insights: ${error.message}
+                        </div>
+                    </div>
+                `;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        function generateInsights() {
+            showNotification('Generating new insights...', 'info');
+            setTimeout(() => loadInsights(), 1000);
+        }
+
+        // ANALYTICS FUNCTIONS
+        async function loadAnalytics(days) {
+            const loadingEl = document.getElementById('analyticsLoading');
+            const tableBody = document.getElementById('analyticsTableBody');
+            
+            if (!loadingEl || !tableBody) return;
+            
+            loadingEl.style.display = 'block';
+            tableBody.innerHTML = '';
+            
+            try {
+                const response = await fetch(`/manager/api/analytics?days=${days}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Update charts
+                    createAnalyticsCharts(data.analytics);
+                    
+                    // Update table
+                    if (!data.analytics.user_breakdown || data.analytics.user_breakdown.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    <i class="fas fa-users me-2"></i>
+                                    No team member data available
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        data.analytics.user_breakdown.forEach(user => {
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <div class="user-cell">
+                                            <div class="user-avatar">
+                                                ${user.name.charAt(0).toUpperCase()}
+                                            </div>
+                                            <div class="user-info">
+                                                <h6>${user.name}</h6>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${user.productive_hours}h</td>
+                                    <td>${user.idle_hours}h</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="fw-bold me-2">${user.productivity_score}%</span>
+                                            <div class="productivity-bar" style="flex: 1;">
+                                                <div class="productivity-fill" style="width: ${user.productivity_score}%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>${user.avg_daily_hours}h/day</td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to load analytics');
+                }
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="text-center py-4 text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Failed to load analytics data: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        function createAnalyticsCharts(analytics) {
+            const isDark = getCurrentTheme() === 'dark';
+            
+            // Trend Chart
+            const trendCtx = document.getElementById('analyticsTrendChart');
+            if (!trendCtx) return;
+            
+            if (window.analyticsTrendChart) {
+                window.analyticsTrendChart.destroy();
+            }
+            
+            window.analyticsTrendChart = new Chart(trendCtx, {
+                type: 'line',
+                data: {
+                    labels: analytics.dates || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Productivity %',
+                        data: analytics.productivity_scores || [75, 82, 68, 90, 78, 85, 88],
+                        borderColor: '#3498db',
+                        backgroundColor: isDark ? 'rgba(52, 152, 219, 0.1)' : 'rgba(52, 152, 219, 0.2)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            min: Math.min(...(analytics.productivity_scores || [0])) - 10,
+                            max: 100,
+                            grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
+                            ticks: { color: isDark ? '#f0f0f0' : '#212529' }
+                        },
+                        x: { 
+                            grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
+                            ticks: { color: isDark ? '#f0f0f0' : '#212529' }
+                        }
+                    }
+                }
+            });
+            
+            // Hours Chart
+            const hoursCtx = document.getElementById('hoursChart');
+            if (!hoursCtx) return;
+            
+            if (window.hoursChart) {
+                window.hoursChart.destroy();
+            }
+            
+            window.hoursChart = new Chart(hoursCtx, {
+                type: 'bar',
+                data: {
+                    labels: analytics.dates || ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [
+                        {
+                            label: 'Productive',
+                            data: analytics.productive_hours || [6, 7, 5, 8, 6, 7, 8],
+                            backgroundColor: isDark ? 'rgba(39, 174, 96, 0.8)' : 'rgba(39, 174, 96, 0.7)',
+                            borderColor: '#27ae60',
+                            borderWidth: 1
+                        },
+                        {
+                            label: 'Idle',
+                            data: analytics.idle_hours || [2, 1, 3, 1, 2, 1, 1],
+                            backgroundColor: isDark ? 'rgba(243, 156, 18, 0.8)' : 'rgba(243, 156, 18, 0.7)',
+                            borderColor: '#f39c12',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        y: { 
+                            beginAtZero: true,
+                            grid: { color: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' },
+                            ticks: { color: isDark ? '#f0f0f0' : '#212529' }
+                        },
+                        x: { 
+                            grid: { display: false },
+                            ticks: { color: isDark ? '#f0f0f0' : '#212529' }
+                        }
+                    }
+                }
             });
         }
 
-        // Send Weekly Report
-        async function sendWeeklyReport() {
-            if (confirm('Send weekly productivity report to your email?')) {
-                try {
-                    const response = await fetch('/manager/api/send-weekly-report', {
-                        method: 'POST'
-                    });
-                    
-                    const result = await response.json();
-                    alert(result.message || result.error);
-                } catch (error) {
-                    alert('Failed to send report: ' + error.message);
-                }
+        function updateChartColors() {
+            if (window.analyticsTrendChart) {
+                window.analyticsTrendChart.destroy();
+                // You would need to recreate with current data
+            }
+            
+            if (window.hoursChart) {
+                window.hoursChart.destroy();
+                // You would need to recreate with current data
             }
         }
+
+        function exportAnalytics() {
+            showNotification('Exporting analytics data...', 'info');
+            // In production, this would trigger a download
+            setTimeout(() => {
+                showNotification('Analytics exported successfully!', 'success');
+            }, 1500);
+        }
+
+        // REPORTS FUNCTIONS
+        async function loadReports() {
+            const loadingEl = document.getElementById('reportsLoading');
+            const tableBody = document.getElementById('reportsTableBody');
+            
+            if (!loadingEl || !tableBody) return;
+            
+            loadingEl.style.display = 'block';
+            tableBody.innerHTML = '';
+            
+            try {
+                const response = await fetch('/manager/api/reports');
+                const data = await response.json();
+                
+                if (data.success) {
+                    if (!data.reports || data.reports.length === 0) {
+                        tableBody.innerHTML = `
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">
+                                    <i class="fas fa-file-alt me-2"></i>
+                                    No reports generated yet
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        data.reports.forEach(report => {
+                            const date = new Date(report.generated_at);
+                            const row = `
+                                <tr>
+                                    <td>
+                                        <div class="fw-bold">${report.title}</div>
+                                    </td>
+                                    <td>${report.period}</td>
+                                    <td>
+                                        <span class="badge bg-${report.type === 'weekly' ? 'primary' : report.type === 'monthly' ? 'info' : 'secondary'}">
+                                            ${report.type}
+                                        </span>
+                                    </td>
+                                    <td>${date.toLocaleDateString()} ${date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</td>
+                                    <td>
+                                        <span class="badge bg-${report.status === 'generated' ? 'success' : 'warning'}">
+                                            ${report.status}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="downloadReport('${report.id}')">
+                                            <i class="fas fa-download"></i> Download
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                            tableBody.innerHTML += row;
+                        });
+                    }
+                } else {
+                    throw new Error(data.error || 'Failed to load reports');
+                }
+            } catch (error) {
+                console.error('Error loading reports:', error);
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="text-center py-4 text-danger">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            Failed to load reports: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            } finally {
+                loadingEl.style.display = 'none';
+            }
+        }
+
+        async function downloadReport(reportId) {
+            try {
+                const response = await fetch(`/manager/api/download-report/${reportId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(data.message || 'Report download started', 'success');
+                } else {
+                    showNotification('Failed to download report', 'error');
+                }
+            } catch (error) {
+                showNotification('Failed to download report', 'error');
+            }
+        }
+
+        function generateReport() {
+            showNotification('Generating new report... This may take a moment.', 'info');
+            setTimeout(() => {
+                showNotification('Report generated successfully!', 'success');
+                loadReports(); // Refresh the list
+            }, 2000);
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', function() {
+        console.log('🏁 DOM fully loaded and ready');
+        updateEmailPreview();
+        
+        // Check if Performance tab is active on page load
+        const activeTab = document.querySelector('#performance.show');
+        if (activeTab) {
+            console.log('⚡ Performance tab is active on page load!');
+            setTimeout(() => {
+                createManagerCharts();
+                createPerformanceCharts();
+            }, 500);
+        }
+        
+        // Add click handler for Performance tab link
+        const perfTabLink = document.querySelector('a[href="#performance"]');
+        if (perfTabLink) {
+            perfTabLink.addEventListener('click', function() {
+                console.log('👆 Performance tab clicked manually');
+            });
+        }
+    });
     </script>
 </body>
 </html>

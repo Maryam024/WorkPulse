@@ -1,287 +1,18 @@
-# frontend/app.py
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, flash, make_response
-from dotenv import load_dotenv
+# frontend/routes.py
+from app import app, supabase, ai_orchestrator, email_sender, password_recovery
+from app import (
+    require_login, get_user_settings, update_user_theme, generate_temp_password,
+    calculate_productivity_stats, get_user_activity_data, send_welcome_email_to_manager,
+    send_user_credentials, send_weekly_report, send_scheduled_weekly_reports
+)
+from flask import render_template, request, redirect, url_for, session, jsonify, flash, make_response
+from datetime import datetime, timezone, timedelta
 import os
-from datetime import datetime, timedelta, timezone
-import pandas as pd
-import hashlib
-import secrets
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+from supabase import create_client
 import threading
-from ai_orchestrator import AIOrchestrator
-from email_service import email_sender
+import random
 import schedule
 import time
-import json
-import requests
-from datetime import datetime,timezone, timedelta
-from password_recovery import password_recovery
-import random
-
-
-AIOrchestrator = None
-try:
-    from ai_orchestrator import AIOrchestrator
-    print("✅ AI Orchestrator module imported successfully")
-except ImportError as e:
-    print(f"⚠️ AI orchestrator import error: {e}")
-    print("⚠️ AI features will be limited. Using fallback mode.")
-    # Create a dummy class for fallback
-    class DummyAIOrchestrator:
-        def process_query(self, user_id, query):
-            return {
-                "explanation": "🤖 **AI Assistant is in fallback mode**\n\n"
-                            "The AI engine couldn't be fully initialized.\n\n"
-                            "**You can still:**\n"
-                            "• Click on example queries above\n"
-                            "• View basic productivity data\n"
-                            "• Use the dashboard for analytics\n\n"
-                            "*Try: 'Show my productivity today'*",
-                "data": [],
-                "visualization_type": "bar",
-                "tool_calls": [],
-                "intent": "fallback"
-            }
-    AIOrchestrator = DummyAIOrchestrator
-
-# Global variable
-ai_orchestrator = None
-
-def initialize_ai():
-    """Initialize AI orchestrator with proper error handling"""
-    global ai_orchestrator
-    
-    try:
-        # Check if it's our dummy class
-        if AIOrchestrator.__name__ == "DummyAIOrchestrator":
-            ai_orchestrator = AIOrchestrator()
-            print("✅ Using fallback AI orchestrator")
-            return True
-            
-        # Try to initialize real orchestrator
-        ai_orchestrator = AIOrchestrator()
-        
-        # Check MCP server connection
-        if hasattr(ai_orchestrator, 'mcp_server_url'):
-            try:
-                response = requests.get(f"{ai_orchestrator.mcp_server_url}/health", timeout=2)
-                if response.status_code == 200:
-                    print("✅ MCP Server is running")
-                else:
-                    print("⚠️ MCP Server is not responding properly")
-            except:
-                print("⚠️ Cannot connect to MCP Server")
-        
-        print("✅ AI Orchestrator initialized successfully")
-        return True
-        
-    except Exception as e:
-        print(f"❌ Failed to initialize AI: {e}")
-        # Create minimal working instance
-        class FallbackOrchestrator:
-            def process_query(self, user_id, query):
-                query_lower = query.lower()
-                if "productivity" in query_lower or "today" in query_lower:
-                    return {
-                        "explanation": "📊 **Productivity Data**\n\nShowing your productivity information.\n\n*For full AI features, ensure:*\n1. MCP server is running on port 8000\n2. Groq API key is configured",
-                        "data": [],
-                        "visualization_type": "bar",
-                        "tool_calls": [{"tool_name": "get_daily_productivity", "parameters": {"user_id": user_id, "days": 7}}],
-                        "intent": "fallback_productivity"
-                    }
-                else:
-                    return {
-                        "explanation": f"🤖 **WorkPulse Assistant**\n\nYou asked: '{query}'\n\nTry one of these:\n• 'Show my productivity'\n• 'Analyze idle time'\n• 'Generate report'",
-                        "data": [],
-                        "visualization_type": "bar",
-                        "tool_calls": [],
-                        "intent": "fallback"
-                    }
-        
-        ai_orchestrator = FallbackOrchestrator()
-        print("✅ Using emergency fallback orchestrator")
-        return True  # Always return True to prevent crashes
-
-# Initialize AI when app starts
-initialize_ai()
-
-# Load environment variables FIRST
-load_dotenv()
-
-# Import create_client from supabase
-from supabase import create_client
-
-# Then import supabase
-try:
-    from supabase_client import supabase
-    print("Supabase client imported successfully")
-except ImportError as e:
-    print(f"Supabase import error: {e}")
-    exit(1)
-
-app = Flask(__name__)
-app.secret_key = os.getenv('SECRET_KEY', 'workpulse-secret-key-2024')
-
-# -----------------------
-# Auth & Helper Functions
-# -----------------------
-def generate_temp_password():
-    """Generate a temporary password for new users"""
-    alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*"
-    return ''.join(secrets.choice(alphabet) for _ in range(10))
-
-def require_login(required_role=None):
-    if 'access_token' not in session:
-        print("No access token in session")
-        return False
-    
-    try:
-        user_response = supabase.auth.get_user(session['access_token'])
-        
-        if not user_response.user:
-            print("Invalid access token")
-            session.clear()
-            return False
-        
-        if required_role and session.get('role') != required_role:
-            print(f"Role mismatch: required {required_role}, has {session.get('role')}")
-            return False
-            
-        return True
-        
-    except Exception as e:
-        print(f"Auth check error: {e}")
-        session.clear()
-        return False
-
-def get_user_settings(user_id):
-    """Get user settings including theme preference"""
-    try:
-        response = supabase.table("user_settings").select("*").eq("user_id", user_id).execute()
-        if response.data:
-            return response.data[0]
-        else:
-            # Create default settings
-            default_settings = {
-                "user_id": user_id,
-                "theme": "light",
-                "email_notifications": True
-            }
-            supabase.table("user_settings").insert(default_settings).execute()
-            return default_settings
-    except Exception as e:
-        print(f"Error getting user settings: {e}")
-        return {"theme": "light", "email_notifications": True}
-
-def update_user_theme(user_id, theme):
-    """Update user's theme preference"""
-    try:
-        supabase.table("user_settings").upsert({
-            "user_id": user_id,
-            "theme": theme,
-            "updated_at": datetime.now(timezone.utc).isoformat()
-        }).execute()
-        return True
-    except Exception as e:
-        print(f"Error updating theme: {e}")
-        return False
-
-def calculate_productivity_stats(activity_data):
-    """
-    Calculate productive and idle hours from activity logs.
-    Activity logs should contain:
-    - "User became idle" events (start of idle period)
-    - "User became active" events (end of idle period)
-    - "Heartbeat" events (for online status)
-    - "User activity" events (for active periods)
-    """
-    if not activity_data:
-        return {
-            "productive_hours": 0,
-            "idle_hours": 0,
-            "productivity_score": 0
-        }
-    
-    # Sort by timestamp
-    activity_data = sorted(activity_data, key=lambda x: x["timestamp"])
-    
-    total_idle_seconds = 0
-    total_active_seconds = 0
-    current_state = "active"  # Assume starting as active
-    last_timestamp = None
-    
-    print(f"📊 Processing {len(activity_data)} activity records...")
-    
-    for i, entry in enumerate(activity_data):
-        try:
-            ts = datetime.fromisoformat(entry["timestamp"].replace('Z', '+00:00'))
-            event = entry["event"]
-            
-            if last_timestamp is None:
-                last_timestamp = ts
-                # Determine initial state
-                if event in ["User became idle", "Heartbeat"]:
-                    current_state = "idle"
-                else:
-                    current_state = "active"
-                continue
-            
-            # Calculate time difference in seconds
-            delta_seconds = (ts - last_timestamp).total_seconds()
-            
-            if delta_seconds > 0:
-                if current_state == "active":
-                    total_active_seconds += delta_seconds
-                else:
-                    total_idle_seconds += delta_seconds
-            
-            # Update state based on event
-            if event == "User became idle":
-                current_state = "idle"
-            elif event == "User became active":
-                current_state = "active"
-            
-            last_timestamp = ts
-            
-        except Exception as e:
-            print(f"⚠️ Error processing activity record {i}: {e}")
-            continue
-    
- # Convert seconds to hours AND minutes
-    total_active_hours = total_active_seconds / 3600
-    total_idle_hours = total_idle_seconds / 3600
-    
-    # Calculate minutes for dashboard
-    productive_minutes = total_active_seconds / 60
-    idle_minutes = total_idle_seconds / 60
-    
-    # Calculate productivity score
-    work_hours = total_active_hours + total_idle_hours
-    if work_hours > 0:
-        productivity_score = (total_active_hours / work_hours) * 100
-    else:
-        productivity_score = 0
-    
-    return {
-        "productive_hours": round(total_active_hours, 2),
-        "idle_hours": round(total_idle_hours, 2),
-        "productive_minutes": round(productive_minutes, 0),  # ADD THIS
-        "idle_minutes": round(idle_minutes, 0),              # ADD THIS
-        "productivity_score": round(productivity_score, 1)
-    }
-
-def get_user_activity_data(user_id=None, days=7):
-    end_date = datetime.now(timezone.utc)
-    start_date = end_date - timedelta(days=days)
-    
-    query = supabase.table("user_activity").select("*")
-    if user_id:
-        query = query.eq("user_id", user_id)
-    
-    resp = query.gte("timestamp", start_date.isoformat()).order("timestamp", desc=True).execute()
-    return resp.data or []
 
 # -----------------------
 # Auth Routes (Updated)
@@ -389,64 +120,6 @@ def signup():
                 return render_template('signup.html', error=f"Signup error: {str(e)}")
     
     return render_template('signup.html')
-
-def send_welcome_email_to_manager(manager_email, manager_name):
-    """Send welcome email to newly registered manager"""
-    html = f"""
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-            <h1>🎉 Welcome to WorkPulse!</h1>
-        </div>
-        
-        <div style="padding: 30px; background: #f9f9f9;">
-            <p>Hello <strong>{manager_name}</strong>,</p>
-            
-            <p>Your WorkPulse manager account has been successfully created!</p>
-            
-            <div style="background: white; border-radius: 10px; padding: 20px; margin: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-                <h3 style="color: #333; margin-top: 0;">Your Account Details</h3>
-                <table style="width: 100%;">
-                    <tr>
-                        <td style="padding: 10px; font-weight: bold;">Login URL:</td>
-                        <td style="padding: 10px;">
-                            <a href="http://localhost:5000/login">http://localhost:5000/login</a>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style="padding: 10px; font-weight: bold;">Email:</td>
-                        <td style="padding: 10px;">{manager_email}</td>
-                    </tr>
-                </table>
-            </div>
-            
-            <div style="background: #e7f5ff; color: #0056b3; padding: 15px; border-radius: 5px; margin: 20px 0;">
-                <strong>💡 Tip:</strong> You can now add team members and track their productivity from your dashboard.
-            </div>
-            
-            <p>You now have access to:</p>
-            <ul>
-                <li>Add team members to your organization</li>
-                <li>Track team productivity in real-time</li>
-                <li>Receive weekly productivity reports</li>
-                <li>Full administrative control over your team</li>
-            </ul>
-            
-            <p style="margin-top: 30px;">Best regards,<br>
-            <strong>The WorkPulse Team</strong></p>
-        </div>
-    </div>
-    """
-    
-    try:
-        return email_sender.send(
-            to_email=manager_email,
-            subject="Welcome to WorkPulse - Your Manager Account is Ready!",
-            html=html,
-            from_email="WorkPulse <onboarding@resend.dev>"
-        )
-    except Exception as e:
-        print(f"Email sending failed: {e}")
-        return False
     
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -588,21 +261,11 @@ def user_dashboard():
     settings = get_user_settings(user_id)
     session['theme'] = settings.get('theme', 'light')
     
-    # Get manager info
-    user_profile = supabase.table("profiles").select("*").eq("id", user_id).execute()
-    if user_profile.data:
-        manager_id = user_profile.data[0].get('manager_id')
-        if manager_id:
-            manager_resp = supabase.table("profiles").select("*").eq("id", manager_id).execute()
-            manager_info = manager_resp.data[0] if manager_resp.data else None
-        else:
-            manager_info = None
-
     return render_template('user_dashboard.html',
                            user=session.get('user'),
                            theme=session.get('theme', 'light'),
-                            manager=manager_info,
                            today_stats=today_stats)
+
 @app.route('/user/api/dashboard')
 def user_dashboard_api():
     if not require_login('user'):
@@ -726,7 +389,6 @@ def manager_dashboard():
                                'avg_minutes_per_employee': round(total_minutes / len(team_stats)) if team_stats else 0
                            })
 
-
 @app.route('/manager/api/add-user', methods=['POST'])
 def add_user():
     if not require_login('manager'):
@@ -798,7 +460,7 @@ def add_user():
         
         # Send credentials to manager
         try:
-            email_sender.send_user_credentials_to_manager(
+            send_user_credentials(
                 manager_email, name, email, temp_password, manager_name
             )
         except Exception as email_error:
@@ -820,11 +482,6 @@ def add_user():
             return jsonify({'error': 'Server configuration error. Please check your service role key.'}), 500
         else:
             return jsonify({'error': f'Failed to add user: {str(e)}'}), 500
-def send_user_credentials(manager_email, user_name, user_email, temp_password, manager_name):
-    return email_sender.send_user_credentials_to_manager(
-        manager_email, user_name, user_email, temp_password, manager_name
-    )
-
 
 @app.route('/api/real-time-stats')
 def real_time_stats():
@@ -1099,55 +756,33 @@ def delete_user(user_id):
         user_email = user_resp.data[0]['email'] if user_resp.data else None
         
         # IMPORTANT: Delete in correct order due to foreign keys
-        # 1. First delete from user_activity (child table that references profiles)
-        supabase.table("user_activity").delete().eq("user_id", user_id).execute()
-        
-        # 2. Delete from user_settings (another child table)
+        # 1. First delete from user_settings (child table)
         supabase.table("user_settings").delete().eq("user_id", user_id).execute()
         
-        # 3. Delete from time_tracking if it exists
+        # 2. Then delete from profiles (parent table)
+        supabase.table("profiles").delete().eq("id", user_id).execute()
+        
+        # 3. Also check for other related tables that might reference the user
+        # For example, if you have time_tracking, tasks, etc.
         try:
+            # Check and delete from time_tracking if it exists
             supabase.table("time_tracking").delete().eq("user_id", user_id).execute()
         except:
             pass  # Table might not exist
         
-        # 4. Delete from tasks if it exists
         try:
+            # Check and delete from tasks if it exists
             supabase.table("tasks").delete().eq("assigned_to", user_id).execute()
         except:
             pass
-        
-        # 5. Check if user has any other references (like being a manager)
-        # If the user is a manager, we need to handle that
-        manager_check = supabase.table("profiles").select("id").eq("manager_id", user_id).execute()
-        if manager_check.data:
-            # Option 1: Set manager_id to NULL for those users
-            supabase.table("profiles").update({"manager_id": None}).eq("manager_id", user_id).execute()
-            # Or Option 2: Delete those users too (if that's your business logic)
-            # for managed_user in manager_check.data:
-            #     supabase.table("profiles").delete().eq("id", managed_user['id']).execute()
-        
-        # 6. Finally delete from profiles (parent table)
-        supabase.table("profiles").delete().eq("id", user_id).execute()
-        
-        # 7. Optional: Also delete the user from Supabase Auth
-        try:
-            # You'll need service role key for this
-            service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-            if service_key:
-                admin_client = create_client(os.getenv("SUPABASE_URL"), service_key)
-                admin_client.auth.admin.delete_user(user_id)
-        except Exception as auth_error:
-            print(f"Note: Could not delete auth user: {auth_error}")
-            # This might be expected if you want to keep auth user but remove profile
         
         return jsonify({'success': True, 'message': 'User deleted successfully'})
         
     except Exception as e:
         print(f"Error deleting user {user_id}: {str(e)}")
         return jsonify({'error': str(e)}), 500
-    
 
+# Add this endpoint that filters by current manager
 @app.route('/manager/api/refresh-users', methods=['GET'])
 def refresh_users():
     if not require_login('manager'):
@@ -1334,68 +969,6 @@ def trigger_weekly_report():
         
     except Exception as e:
         return jsonify({'error': str(e)}), 500
-    
-def send_weekly_report(manager_email, report_data):
-    email_sender.send_weekly_report(manager_email, report_data)
-
-def send_scheduled_weekly_reports():
-    """Send weekly reports to all managers"""
-    print("Checking for weekly reports to send...")
-    
-    try:
-        # Get all managers
-        response = supabase.table("profiles").select("*").eq("role", "manager").execute()
-        managers = response.data or []
-        
-        for manager in managers:
-            org_id = manager.get('organization_id')
-            if not org_id:
-                continue
-            
-            # Get all users in organization
-            users_resp = supabase.table("profiles").select("*").eq("organization_id", org_id).eq("role", "user").execute()
-            users = users_resp.data or []
-            
-            # Calculate weekly stats for each user
-            team_data = []
-            
-            for user in users:
-                weekly_activities = get_user_activity_data(user['id'], days=7)
-                weekly_stats = calculate_productivity_stats(weekly_activities)
-                
-                team_data.append({
-                    'name': user['name'],
-                    'productive_hours': weekly_stats['productive_hours'],
-                    'idle_hours': weekly_stats['idle_hours'],
-                    'productivity_score': weekly_stats['productivity_score']
-                })
-            
-            if team_data:
-                # Prepare report data
-                report_data = {
-                    'period': f"{(datetime.now() - timedelta(days=7)).strftime('%Y-%m-%d')} to {datetime.now().strftime('%Y-%m-%d')}",
-                    'team': team_data,
-                    'total_productive': sum(u['productive_hours'] for u in team_data),
-                    'avg_productivity': sum(u['productivity_score'] for u in team_data) / len(team_data),
-                    'most_productive': max(team_data, key=lambda x: x['productivity_score'])['name'] if team_data else 'N/A'
-                }
-                
-                # Send report
-                email_sender.send_weekly_report(manager['email'], report_data)
-                print(f"Sent weekly report to {manager['email']}")
-    
-    except Exception as e:
-        print(f"Error sending scheduled reports: {e}")
-
-# Add a background thread for scheduled reports
-def start_scheduler():
-    """Start the scheduler in a background thread"""
-    # Schedule weekly report every Sunday at 9 AM
-    schedule.every().sunday.at("09:00").do(send_scheduled_weekly_reports)
-    
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
 
 @app.route('/ai-assistant')
 def ai_assistant():
@@ -1412,69 +985,56 @@ def ai_assistant():
                            user=session.get('user'),
                            role=session.get('role'),
                            theme=session.get('theme', 'light'))
-# In app.py, after initializing AI
-def check_mcp_server():
-    try:
-        response = requests.get("http://localhost:8000/health", timeout=2)
-        return response.status_code == 200
-    except:
-        return False
-
-if ai_orchestrator:
-    if not check_mcp_server():
-        print("⚠️ MCP Server not running. Start it with: python server.py")
-
 
 @app.route('/api/ai-query', methods=['POST'])
 def process_ai_query():
-    """Handle AI assistant queries"""
-    if 'access_token' not in session:
+    """Process natural language query using AI"""
+    if not require_login():
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.get_json()
+    query = data.get('query', '').strip()
+    user_id = session['user']['id']
+    user_role = session.get('role', 'user')
+    
+    if not query:
+        return jsonify({'error': 'Query is required'}), 400
+    
+    # Always ensure ai_orchestrator exists
+    if not ai_orchestrator:
         return jsonify({
-            "success": False,
-            "error": "User not authenticated",
-            "message": "Please log in first"
-        }), 401
+            'success': True,
+            'explanation': "🤖 **AI Assistant is initializing...**\n\nPlease try again in a moment.",
+            'data': [],
+            'visualization_type': 'bar',
+            'tool_calls': [],
+            'intent': 'initializing'
+        })
     
     try:
-        data = request.json
-        query = data.get('query', '').strip()
-        
-        if not query:
-            return jsonify({
-                "success": False,
-                "error": "No query provided"
-            }), 400
-        
-        # Get REAL user ID from session
-        real_user_id = session['user']['id']
-        user_role = session.get('role', 'user')
-        
-        print(f"🔑 Processing AI query for user: {real_user_id}, role: {user_role}")
-        
-        # Initialize orchestrator
-        from ai_orchestrator import AIOrchestrator
-        orchestrator = AIOrchestrator()
-        
-        # Process query with REAL user_id
-        response = orchestrator.process_query(
-            user_id=real_user_id,
-            query=query,
-            user_role=user_role
-        )
-        
-        return jsonify(response)
-        
-    except Exception as e:
-        print(f"❌ Error in ai_query route: {e}")
-        import traceback
-        traceback.print_exc()
+        response = ai_orchestrator.process_query(user_id, query)
         
         return jsonify({
-            "success": False,
-            "error": "Internal server error",
-            "message": str(e)
-        }), 500
-    
+            'success': True,
+            'explanation': response.get('explanation', ''),
+            'data': response.get('data', []),
+            'visualization_type': response.get('visualization_type', 'bar'),
+            'tool_calls': response.get('tool_calls', []),
+            'intent': response.get('intent', 'unknown')
+        })
+        
+    except Exception as e:
+        print(f"AI query error: {e}")
+        # Return a working response even on error
+        return jsonify({
+            'success': True,
+            'explanation': f"🤖 **WorkPulse Assistant**\n\n**Query:** '{query}'\n\nI'm having trouble with the AI engine right now.\n\n**Try clicking on one of the example queries** - they'll work even without AI!",
+            'data': [],
+            'visualization_type': 'bar',
+            'tool_calls': [],
+            'intent': 'error_fallback'
+        })
+
 @app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     """Forgot password page"""
@@ -1566,579 +1126,4 @@ def reset_password(token):
             return render_template('reset_password.html', token=token, user_email=user_email)
     
     return render_template('reset_password.html', token=token, user_email=user_email)
-@app.route('/user/api/update-password', methods=['POST'])
-def update_user_password():
-    if not require_login('user'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.get_json()
-    current_password = data.get('current_password')
-    new_password = data.get('new_password')
-    
-    user_email = session['user']['email']
-    
-    try:
-        # Verify current password
-        supabase.auth.sign_in_with_password({
-            "email": user_email,
-            "password": current_password
-        })
-        
-        # Update password
-        supabase.auth.update_user({
-            "password": new_password
-        })
-        
-        return jsonify({'success': True, 'message': 'Password updated successfully'})
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 400
 
-@app.route('/manager/api/activity', methods=['GET'])
-def get_team_activity():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    manager_id = session['user']['id']
-    org_id = session['user'].get('organization_id')
-    
-    try:
-        # Get all users in organization
-        users_resp = supabase.table("profiles").select("*").eq("organization_id", org_id).eq("role", "user").execute()
-        users = users_resp.data or []
-        
-        # Get recent activity for all users
-        recent_activity = []
-        for user in users:
-            # Get last 10 activities for each user
-            activities_resp = supabase.table("user_activity").select("*").eq("user_id", user['id']).order("timestamp", desc=True).limit(10).execute()
-            
-            for activity in activities_resp.data or []:
-                recent_activity.append({
-                    'user_name': user['name'],
-                    'user_id': user['id'],
-                    'event': activity['event'],
-                    'timestamp': activity['timestamp'],
-                    'time_ago': get_time_ago(activity['timestamp'])
-                })
-        
-        # Sort by timestamp (newest first)
-        recent_activity.sort(key=lambda x: x['timestamp'], reverse=True)
-        
-        # Get today's activity summary
-        today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
-        today_activities = []
-        
-        for user in users:
-            today_resp = supabase.table("user_activity").select("*").eq("user_id", user['id']).gte("timestamp", today_start.isoformat()).execute()
-            today_activities.extend(today_resp.data or [])
-        
-        summary = {
-            'total_activities': len(today_activities),
-            'active_users': len(set(a['user_id'] for a in today_activities)),
-            'idle_events': len([a for a in today_activities if 'idle' in a['event'].lower()]),
-            'active_events': len([a for a in today_activities if 'active' in a['event'].lower()]),
-        }
-        
-        return jsonify({
-            'success': True,
-            'recent_activity': recent_activity[:20],  # Limit to 20 most recent
-            'summary': summary
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-def get_time_ago(timestamp_str):
-    """Calculate human-readable time ago"""
-    try:
-        timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-        now = datetime.now(timezone.utc)
-        diff = now - timestamp
-        
-        if diff.total_seconds() < 60:
-            return 'Just now'
-        elif diff.total_seconds() < 3600:
-            minutes = int(diff.total_seconds() / 60)
-            return f'{minutes} minute{"s" if minutes > 1 else ""} ago'
-        elif diff.total_seconds() < 86400:
-            hours = int(diff.total_seconds() / 3600)
-            return f'{hours} hour{"s" if hours > 1 else ""} ago'
-        else:
-            days = int(diff.total_seconds() / 86400)
-            return f'{days} day{"s" if days > 1 else ""} ago'
-    except:
-        return 'Unknown time'
-
-# Insights API endpoint
-@app.route('/manager/api/insights', methods=['GET'])
-def get_insights():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    manager_id = session['user']['id']
-    org_id = session['user'].get('organization_id')
-    
-    try:
-        # Get all users
-        users_resp = supabase.table("profiles").select("*").eq("organization_id", org_id).eq("role", "user").execute()
-        users = users_resp.data or []
-        
-        if not users:
-            return jsonify({
-                'success': True,
-                'insights': [
-                    {
-                        'type': 'info',
-                        'title': 'No Team Members Yet',
-                        'message': 'Add team members to start getting insights.',
-                        'action': 'add_users'
-                    }
-                ],
-                'recommendations': []
-            })
-        
-        # Calculate insights
-        insights = []
-        recommendations = []
-        
-        # Get weekly productivity for each user
-        user_productivities = []
-        for user in users:
-            weekly_activities = get_user_activity_data(user['id'], days=7)
-            weekly_stats = calculate_productivity_stats(weekly_activities)
-            user_productivities.append({
-                'user': user['name'],
-                'productivity': weekly_stats['productivity_score']
-            })
-        
-        # Insight 1: Identify top performer
-        if user_productivities:
-            top_performer = max(user_productivities, key=lambda x: x['productivity'])
-            insights.append({
-                'type': 'success',
-                'title': 'Top Performer',
-                'message': f'{top_performer["user"]} has the highest productivity at {top_performer["productivity"]:.1f}%',
-                'icon': 'trophy'
-            })
-            
-            # Recommendation based on top performer
-            if top_performer['productivity'] > 85:
-                recommendations.append({
-                    'title': 'Learn from Success',
-                    'description': f'Consider having {top_performer["user"]} share their productivity strategies with the team.',
-                    'priority': 'medium'
-                })
-        
-        # Insight 2: Identify needs improvement
-        if len(user_productivities) > 1:
-            lowest_performer = min(user_productivities, key=lambda x: x['productivity'])
-            if lowest_performer['productivity'] < 60:
-                insights.append({
-                    'type': 'warning',
-                    'title': 'Needs Support',
-                    'message': f'{lowest_performer["user"]} has low productivity ({lowest_performer["productivity"]:.1f}%). Consider providing additional support.',
-                    'icon': 'exclamation-triangle'
-                })
-                
-                recommendations.append({
-                    'title': 'Provide Support',
-                    'description': f'Schedule a check-in with {lowest_performer["user"]} to identify challenges and provide support.',
-                    'priority': 'high'
-                })
-        
-        # Insight 3: Overall team productivity
-        avg_productivity = sum(u['productivity'] for u in user_productivities) / len(user_productivities)
-        if avg_productivity > 75:
-            insights.append({
-                'type': 'success',
-                'title': 'Team Doing Well',
-                'message': f'Team average productivity is {avg_productivity:.1f}%, which is above target.',
-                'icon': 'chart-line'
-            })
-        elif avg_productivity < 50:
-            insights.append({
-                'type': 'warning',
-                'title': 'Team Needs Improvement',
-                'message': f'Team average productivity is {avg_productivity:.1f}%, consider reviewing processes.',
-                'icon': 'chart-line'
-            })
-        
-        # Recommendation 4: Regular breaks
-        recommendations.append({
-            'title': 'Encourage Regular Breaks',
-            'description': 'Studies show that regular 5-10 minute breaks can improve productivity by 15-20%.',
-            'priority': 'low'
-        })
-        
-        return jsonify({
-            'success': True,
-            'insights': insights,
-            'recommendations': recommendations[:3]  # Limit to 3 recommendations
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Analytics API endpoint
-@app.route('/manager/api/analytics', methods=['GET'])
-def get_analytics():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    try:
-        # Get time range (default: last 7 days)
-        days = int(request.args.get('days', 7))
-        manager_id = session['user']['id']
-        org_id = session['user'].get('organization_id')
-        
-        # Get all users
-        users_resp = supabase.table("profiles").select("*").eq("organization_id", org_id).eq("role", "user").execute()
-        users = users_resp.data or []
-        
-        # Generate dates for the period
-        dates = []
-        for i in range(days):
-            date = datetime.now(timezone.utc) - timedelta(days=i)
-            dates.append(date.strftime('%Y-%m-%d'))
-        dates.reverse()
-        
-        # Initialize analytics data
-        analytics = {
-            'dates': dates,
-            'total_hours': [],
-            'productive_hours': [],
-            'idle_hours': [],
-            'productivity_scores': [],
-            'user_breakdown': []
-        }
-        
-        # For each date, calculate totals
-        for date_str in dates:
-            date_obj = datetime.strptime(date_str, '%Y-%m-%d').replace(tzinfo=timezone.utc)
-            next_day = date_obj + timedelta(days=1)
-            
-            total_productive = 0
-            total_idle = 0
-            
-            for user in users:
-                # Get activities for this date
-                activities_resp = supabase.table("user_activity").select("*").eq(
-                    "user_id", user['id']
-                ).gte(
-                    "timestamp", date_obj.isoformat()
-                ).lt(
-                    "timestamp", next_day.isoformat()
-                ).execute()
-                
-                if activities_resp.data:
-                    stats = calculate_productivity_stats(activities_resp.data)
-                    total_productive += stats['productive_hours']
-                    total_idle += stats['idle_hours']
-            
-            total_hours = total_productive + total_idle
-            productivity_score = (total_productive / total_hours * 100) if total_hours > 0 else 0
-            
-            analytics['total_hours'].append(round(total_hours, 1))
-            analytics['productive_hours'].append(round(total_productive, 1))
-            analytics['idle_hours'].append(round(total_idle, 1))
-            analytics['productivity_scores'].append(round(productivity_score, 1))
-        
-        # User breakdown (overall)
-        for user in users:
-            user_activities = get_user_activity_data(user['id'], days=days)
-            user_stats = calculate_productivity_stats(user_activities)
-            
-            analytics['user_breakdown'].append({
-                'name': user['name'],
-                'productive_hours': round(user_stats['productive_hours'], 1),
-                'idle_hours': round(user_stats['idle_hours'], 1),
-                'productivity_score': round(user_stats['productivity_score'], 1),
-                'avg_daily_hours': round((user_stats['productive_hours'] + user_stats['idle_hours']) / days, 1)
-            })
-        
-        # Sort user breakdown by productivity
-        analytics['user_breakdown'].sort(key=lambda x: x['productivity_score'], reverse=True)
-        
-        return jsonify({
-            'success': True,
-            'analytics': analytics,
-            'time_period': f'Last {days} days'
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Reports API endpoint
-@app.route('/manager/api/reports', methods=['GET'])
-def get_reports():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    try:
-        # Get available reports
-        manager_id = session['user']['id']
-        org_id = session['user'].get('organization_id')
-        
-        # In a real app, you'd store generated reports in a database
-        # For now, we'll generate mock reports
-        
-        reports = [
-            {
-                'id': 'weekly_2024_01',
-                'title': 'Weekly Productivity Report',
-                'period': 'Jan 1-7, 2024',
-                'type': 'weekly',
-                'generated_at': (datetime.now(timezone.utc) - timedelta(days=1)).isoformat(),
-                'status': 'generated',
-                'download_url': '/manager/api/download-report/weekly_2024_01'
-            },
-            {
-                'id': 'monthly_2023_12',
-                'title': 'Monthly Summary Report',
-                'period': 'December 2023',
-                'type': 'monthly',
-                'generated_at': (datetime.now(timezone.utc) - timedelta(days=30)).isoformat(),
-                'status': 'generated',
-                'download_url': '/manager/api/download-report/monthly_2023_12'
-            },
-            {
-                'id': 'team_performance',
-                'title': 'Team Performance Analysis',
-                'period': 'Q4 2023',
-                'type': 'quarterly',
-                'generated_at': (datetime.now(timezone.utc) - timedelta(days=60)).isoformat(),
-                'status': 'generated',
-                'download_url': '/manager/api/download-report/team_performance'
-            }
-        ]
-        
-        return jsonify({
-            'success': True,
-            'reports': reports,
-            'can_generate': True
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/manager/api/download-report/<report_id>')
-def download_report(report_id):
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    # For now, just return a message
-    # In production, you'd generate and return a PDF/Excel file
-    return jsonify({
-        'success': True,
-        'message': f'Report {report_id} download would start here.',
-        'note': 'In production, this would return a PDF or Excel file'
-    })
-
-# Team Management API endpoint
-@app.route('/manager/api/team-management', methods=['GET'])
-def get_team_management():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    manager_id = session['user']['id']
-    org_id = session['user'].get('organization_id')
-    
-    try:
-        # Get all users in organization
-        users_resp = supabase.table("profiles").select("*").eq("organization_id", org_id).order("created_at", desc=True).execute()
-        users = users_resp.data or []
-        
-        # Get organization details
-        org_resp = supabase.table("organizations").select("*").eq("id", org_id).execute()
-        organization = org_resp.data[0] if org_resp.data else {}
-        
-        # Separate managers and regular users
-        managers = [u for u in users if u['role'] == 'manager']
-        team_members = [u for u in users if u['role'] == 'user']
-        
-        # Get stats for each team member
-        for member in team_members:
-            member_activities = get_user_activity_data(member['id'], days=7)
-            member_stats = calculate_productivity_stats(member_activities)
-            member['weekly_stats'] = member_stats
-            
-            # Check online status
-            is_online = len(member_activities) > 0 and (
-                datetime.now(timezone.utc) - datetime.fromisoformat(member_activities[0]['timestamp'].replace('Z', '+00:00'))
-            ).total_seconds() < 300
-            member['is_online'] = is_online
-        
-        return jsonify({
-            'success': True,
-            'organization': organization,
-            'managers': managers,
-            'team_members': team_members,
-            'total_members': len(team_members),
-            'active_members': len([m for m in team_members if m.get('is_online', False)]),
-            'invite_link': f"https://workpulse.app/join/{organization.get('invite_code', 'pending')}" if organization.get('invite_code') else None
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Settings API endpoint
-@app.route('/manager/api/settings', methods=['GET'])
-def get_manager_settings():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    manager_id = session['user']['id']
-    
-    try:
-        # Get manager profile
-        profile_resp = supabase.table("profiles").select("*").eq("id", manager_id).execute()
-        profile = profile_resp.data[0] if profile_resp.data else {}
-        
-        # Get organization
-        org_resp = supabase.table("organizations").select("*").eq("id", profile.get('organization_id')).execute()
-        organization = org_resp.data[0] if org_resp.data else {}
-        
-        # Get user settings
-        settings_resp = supabase.table("user_settings").select("*").eq("user_id", manager_id).execute()
-        settings = settings_resp.data[0] if settings_resp.data else {}
-        
-        return jsonify({
-            'success': True,
-            'profile': {
-                'name': profile.get('name'),
-                'email': profile.get('email'),
-                'role': profile.get('role'),
-                'created_at': profile.get('created_at')
-            },
-            'organization': {
-                'name': organization.get('name'),
-                'created_at': organization.get('created_at'),
-                'team_size': organization.get('team_size', 0)
-            },
-            'settings': {
-                'theme': settings.get('theme', 'light'),
-                'email_notifications': settings.get('email_notifications', True),
-                'weekly_reports': settings.get('weekly_reports', True),
-                'productivity_alerts': settings.get('productivity_alerts', True)
-            }
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/manager/api/update-settings', methods=['POST'])
-def update_manager_settings():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.get_json()
-    manager_id = session['user']['id']
-    
-    try:
-        # Update user settings
-        if 'settings' in data:
-            supabase.table("user_settings").upsert({
-                'user_id': manager_id,
-                **data['settings'],
-                'updated_at': datetime.now(timezone.utc).isoformat()
-            }).execute()
-        
-        # Update profile if needed
-        if 'profile' in data and 'name' in data['profile']:
-            supabase.table("profiles").update({
-                'name': data['profile']['name'],
-                'updated_at': datetime.now(timezone.utc).isoformat()
-            }).eq('id', manager_id).execute()
-        
-        return jsonify({'success': True, 'message': 'Settings updated successfully'})
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-# Add this missing endpoint for productivity data
-@app.route('/manager/api/productivity-data', methods=['GET'])
-def get_productivity_data():
-    if not require_login('manager'):
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    try:
-        days = int(request.args.get('days', 7))
-        manager_id = session['user']['id']
-        org_id = session['user'].get('organization_id')
-        
-        # Get all users
-        users_resp = supabase.table("profiles").select("*").eq("organization_id", org_id).eq("role", "user").execute()
-        users = users_resp.data or []
-        
-        # Generate productivity trend for last 'days' days
-        trend_data = []
-        for i in range(days):
-            date = datetime.now(timezone.utc) - timedelta(days=i)
-            date_str = date.strftime('%Y-%m-%d')
-            
-            total_productive = 0
-            total_idle = 0
-            
-            for user in users:
-                # Get activities for this date
-                date_obj = date.replace(hour=0, minute=0, second=0, microsecond=0)
-                next_day = date_obj + timedelta(days=1)
-                
-                activities_resp = supabase.table("user_activity").select("*").eq(
-                    "user_id", user['id']
-                ).gte(
-                    "timestamp", date_obj.isoformat()
-                ).lt(
-                    "timestamp", next_day.isoformat()
-                ).execute()
-                
-                if activities_resp.data:
-                    stats = calculate_productivity_stats(activities_resp.data)
-                    total_productive += stats['productive_hours']
-                    total_idle += stats['idle_hours']
-            
-            total_hours = total_productive + total_idle
-            productivity = (total_productive / total_hours * 100) if total_hours > 0 else 0
-            trend_data.append(round(productivity, 1))
-        
-        trend_data.reverse()  # Reverse to show oldest to newest
-        
-        # Generate distribution data (High, Medium, Low)
-        distribution_data = [0, 0, 0]
-        for user in users:
-            user_activities = get_user_activity_data(user['id'], days=7)
-            user_stats = calculate_productivity_stats(user_activities)
-            score = user_stats['productivity_score']
-            
-            if score > 80:
-                distribution_data[0] += 1
-            elif score >= 60:
-                distribution_data[1] += 1
-            else:
-                distribution_data[2] += 1
-        
-        # Generate labels
-        labels = []
-        for i in range(days):
-            date = datetime.now(timezone.utc) - timedelta(days=days-i-1)
-            labels.append(date.strftime('%a'))
-        
-        return jsonify({
-            'success': True,
-            'labels': labels,
-            'trend': trend_data,
-            'distribution': distribution_data,
-            'team_size': len(users)
-        })
-        
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-    
-
-if __name__ == '__main__':
-    # Start scheduler in background thread
-    scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
-    scheduler_thread.start()
-    
-    app.run(debug=True, host='0.0.0.0', port=5000)

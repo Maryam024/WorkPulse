@@ -12,598 +12,832 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            --success-gradient: linear-gradient(135deg, #28a745 0%, #20c997 100%);
-            --warning-gradient: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
-            --info-gradient: linear-gradient(135deg, #17a2b8 0%, #0dcaf0 100%);
-            --danger-gradient: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
-            
-            --bg-light: #f8f9fa;
-            --bg-dark: #1a1a2e;
-            --card-light: #ffffff;
-            --card-dark: #16213e;
-            --text-light: #212529;
-            --text-dark: #f0f0f0;
-            --text-muted-light: #6c757d;
-            --text-muted-dark: #a0a0a0;
-            --border-light: #dee2e6;
-            --border-dark: #2d3748;
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --info-color: #2980b9;
+            --border-color: #ecf0f1;
+            --card-bg: #ffffff;
+            --sidebar-bg: #f8f9fa;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
         }
 
         [data-bs-theme="dark"] {
-            background-color: var(--bg-dark);
-            color: var(--text-dark);
-        }
-
-        [data-bs-theme="light"] {
-            background-color: var(--bg-light);
-            color: var(--text-light);
+            --primary-color: #34495e;
+            --secondary-color: #3498db;
+            --success-color: #2ecc71;
+            --warning-color: #f39c12;
+            --info-color: #3498db;
+            --border-color: #2c3e50;
+            --card-bg: #2c3e50;
+            --sidebar-bg: #34495e;
+            --text-primary: #ecf0f1;
+            --text-secondary: #bdc3c7;
         }
 
         body {
-            transition: background-color 0.3s ease, color 0.3s ease;
             font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            overflow-x: hidden;
+            font-size: 13px;
+            background-color: var(--sidebar-bg);
+            color: var(--text-primary);
             min-height: 100vh;
-            padding-bottom: 70px; /* Space for profile */
         }
 
-        /* Main container */
-        .main-container {
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 250px;
+            background: var(--card-bg);
+            border-right: 1px solid var(--border-color);
+            transition: all 0.3s ease;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            padding: 20px 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+            color: var(--primary-color);
+        }
+
+        .sidebar-header small {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .sidebar-nav {
+            padding: 15px 0;
+        }
+
+        .nav-item {
+            margin-bottom: 2px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 10px 15px;
+            color: var(--text-primary);
+            text-decoration: none;
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+            font-size: 13px;
+        }
+
+        .nav-link:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-left-color: var(--secondary-color);
+        }
+
+        .nav-link.active {
+            background-color: rgba(52, 152, 219, 0.15);
+            border-left-color: var(--secondary-color);
+            color: var(--secondary-color);
+            font-weight: 500;
+        }
+
+        .nav-link i {
+            width: 20px;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
             padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
+            transition: all 0.3s ease;
         }
 
-        /* Header area */
-        .dashboard-header {
+        .content-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .header-title h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
+        .content-header h1 {
+            font-size: 20px;
+            font-weight: 600;
             margin: 0;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            color: var(--primary-color);
         }
 
-        .header-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Stats Cards - Compact */
+        /* Stats Cards */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-
-        @media (max-width: 768px) {
-            .stats-grid {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
         .stat-card {
-            border-radius: 10px;
-            border: none;
-            padding: 12px;
-            transition: all 0.2s ease;
-            background: var(--card-light);
-            border: 1px solid var(--border-light);
-            min-height: 80px;
-        }
-
-        [data-bs-theme="dark"] .stat-card {
-            background: var(--card-dark);
-            border-color: var(--border-dark);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        [data-bs-theme="dark"] .stat-card:hover {
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
-        }
-
-        .stat-card-content {
+        .stat-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            height: 100%;
+            margin-bottom: 10px;
         }
 
-        .stat-info h3 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin: 0 0 2px 0;
-            line-height: 1;
-        }
-
-        .stat-info h6 {
-            font-size: 0.75rem;
+        .stat-title {
+            font-size: 12px;
             font-weight: 600;
-            margin: 0;
-            opacity: 0.8;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            color: var(--text-secondary);
+            margin: 0;
         }
 
         .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
+            width: 35px;
+            height: 35px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            font-size: 16px;
         }
 
-        .stat-icon.productive { background: rgba(40, 167, 69, 0.1); color: #28a745; }
-        .stat-icon.idle { background: rgba(255, 193, 7, 0.1); color: #ffc107; }
-        .stat-icon.total { background: rgba(102, 126, 234, 0.1); color: #667eea; }
-
-        /* Main content area */
-        .content-area {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 5px 0;
+            color: var(--primary-color);
         }
 
-        @media (max-width: 992px) {
-            .content-area {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
+        .stat-change {
+            font-size: 11px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .stat-change.positive {
+            color: var(--success-color);
+        }
+
+        .stat-change.negative {
+            color: #e74c3c;
         }
 
         /* Charts */
-        .chart-section {
-            background: var(--card-light);
-            border: 1px solid var(--border-light);
-            border-radius: 10px;
-            padding: 15px;
-            height: 280px;
-        }
-
-        [data-bs-theme="dark"] .chart-section {
-            background: var(--card-dark);
-            border-color: var(--border-dark);
+        .chart-container {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
         }
 
         .chart-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 20px;
         }
 
-        .chart-header h5 {
-            margin: 0;
+        .chart-title {
+            font-size: 14px;
             font-weight: 600;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .chart-container {
-            height: calc(100% - 30px);
-            width: 100%;
-            position: relative;
-        }
-
-        /* Productivity Gauge */
-        .productivity-section {
-            background: var(--card-light);
-            border: 1px solid var(--border-light);
-            border-radius: 10px;
-            padding: 15px;
-            height: 280px;
-            display: flex;
-            flex-direction: column;
-        }
-
-        [data-bs-theme="dark"] .productivity-section {
-            background: var(--card-dark);
-            border-color: var(--border-dark);
-        }
-
-        .productivity-header {
-            margin-bottom: 10px;
-        }
-
-        .productivity-header h5 {
             margin: 0;
-            font-weight: 600;
-            font-size: 0.95rem;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            color: var(--primary-color);
         }
 
-        .productivity-score-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
+        .chart-subtitle {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Empty States */
+        .empty-state {
             text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
         }
 
-        .productivity-score {
-            font-size: 2.2rem;
-            font-weight: 700;
-            margin: 5px 0;
-            background: var(--primary-gradient);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            opacity: 0.3;
         }
 
-        .productivity-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin: 5px 0;
+        .empty-state p {
+            font-size: 13px;
+            margin: 0;
         }
 
-        .badge-excellent { background: var(--success-gradient); color: white; }
-        .badge-good { background: var(--warning-gradient); color: white; }
-        .badge-poor { background: var(--danger-gradient); color: white; }
-
-        .gauge-container {
-            height: 120px;
-            width: 100%;
-            margin: 10px 0;
-        }
-
-        /* Profile section - Very small in bottom left */
-        .profile-section {
-            position: fixed;
-            bottom: 15px;
-            left: 15px;
-            background: var(--card-light);
-            border: 1px solid var(--border-light);
+        /* Table */
+        .data-table {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
-            padding: 8px 10px;
-            width: auto;
-            max-width: 200px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 100;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            overflow: hidden;
         }
 
-        [data-bs-theme="dark"] .profile-section {
-            background: var(--card-dark);
-            border-color: var(--border-dark);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        .table-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
         }
 
-        .profile-avatar {
-            width: 32px;
-            height: 32px;
-            min-width: 32px;
-            border-radius: 50%;
-            background: var(--primary-gradient);
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        .table-header h5 {
+            font-size: 14px;
             font-weight: 600;
-            font-size: 0.9rem;
-        }
-
-        .profile-info {
-            overflow: hidden;
-        }
-
-        .profile-info h6 {
             margin: 0;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table {
+            margin: 0;
+            font-size: 13px;
+        }
+
+        .table th {
             font-weight: 600;
-            font-size: 0.8rem;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            border-top: none;
+            padding: 12px 20px;
+            background-color: rgba(0, 0, 0, 0.02);
         }
 
-        .profile-info p {
-            margin: 0;
-            font-size: 0.7rem;
-            opacity: 0.7;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+        [data-bs-theme="dark"] .table th {
+            background-color: rgba(255, 255, 255, 0.02);
         }
 
-        .profile-badge {
-            position: absolute;
-            top: -6px;
-            right: -6px;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 0.6rem;
+        .table td {
+            padding: 12px 20px;
+            vertical-align: middle;
+        }
+
+        /* Settings Page */
+        .settings-section {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .form-label {
+            font-size: 13px;
             font-weight: 500;
+            margin-bottom: 5px;
         }
 
-        @media (max-width: 576px) {
-            .profile-section {
-                bottom: 10px;
-                left: 10px;
-                padding: 6px 8px;
-                max-width: 160px;
+        .form-control {
+            font-size: 13px;
+            padding: 8px 12px;
+        }
+
+        .btn {
+            font-size: 13px;
+            padding: 8px 16px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
             }
             
-            .profile-avatar {
-                width: 28px;
-                height: 28px;
-                font-size: 0.8rem;
+            .sidebar.active {
+                margin-left: 0;
             }
             
-            .profile-info h6 {
-                font-size: 0.75rem;
+            .main-content {
+                margin-left: 0;
             }
             
-            .profile-info p {
-                font-size: 0.65rem;
+            .stats-grid {
+                grid-template-columns: 1fr;
             }
         }
 
-        /* Action buttons */
+        /* Theme Toggle */
         .theme-toggle-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
             width: 36px;
             height: 36px;
-            border-radius: 50%;
-            border: 1px solid var(--border-light);
-            background: var(--card-light);
-            color: var(--text-light);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            color: var(--text-primary);
+            cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        [data-bs-theme="dark"] .theme-toggle-btn {
-            border-color: var(--border-dark);
-            background: var(--card-dark);
-            color: var(--text-dark);
-        }
-
         .theme-toggle-btn:hover {
-            transform: rotate(15deg);
+            background-color: rgba(52, 152, 219, 0.1);
         }
 
-        .logout-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-        }
-
-        /* Footer note */
-        .footer-note {
-            text-align: center;
+        /* Profile Info */
+        .profile-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 10px;
-            font-size: 0.75rem;
-            opacity: 0.7;
-            margin-top: 15px;
+            border-top: 1px solid var(--border-color);
+            margin-top: auto;
         }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-
-        [data-bs-theme="dark"] ::-webkit-scrollbar-track {
-            background: var(--border-dark);
-        }
-
-        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
-            background: #667eea;
-            border-radius: 2px;
-        }
-
-        [data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
-            background: #764ba2;
-        }
-
-        /* Animation */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(5px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
-        }
-
-        /* Tooltips */
-        [data-tooltip] {
-            position: relative;
-            cursor: help;
-        }
-
-        [data-tooltip]:hover::after {
-            content: attr(data-tooltip);
-            position: absolute;
-            bottom: 100%;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--bg-dark);
+        .profile-avatar {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--secondary-color);
             color: white;
-            padding: 6px 10px;
-            border-radius: 4px;
-            font-size: 0.75rem;
-            white-space: nowrap;
-            z-index: 1000;
-            margin-bottom: 4px;
-            pointer-events: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
         }
 
-        [data-bs-theme="dark"] [data-tooltip]:hover::after {
-            background: var(--card-light);
-            color: var(--text-light);
+        .profile-details h6 {
+            font-size: 13px;
+            margin: 0;
+            font-weight: 600;
         }
 
-        /* Loading indicator */
-        .loading {
-            opacity: 0.7;
-            pointer-events: none;
+        .profile-details small {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        /* AI Assistant Navigation */
+        .ai-assistant-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: linear-gradient(135deg, var(--secondary-color), #5dade2);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .ai-assistant-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            color: white;
+        }
+
+        .ai-assistant-link i {
+            font-size: 16px;
+        }
+
+        /* Logout Button */
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 15px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .logout-btn:hover {
+            background: #e74c3c;
+            border-color: #e74c3c;
+            color: white;
+        }
+
+        .logout-btn i {
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-    <!-- Main Content -->
-    <div class="main-container">
-        <!-- Header -->
-         <a href="/ai-assistant" class="btn btn-primary me-2">
-    <i class="fas fa-robot"></i> AI Assistant
-</a>
-        <div class="dashboard-header fade-in">
-            <div class="header-title">
-                <h1>
-                    <i class="fas fa-chart-line me-2"></i>
-                    Productivity Dashboard
-                </h1>
-            </div>
-            <div class="header-actions">
-                <button id="themeToggle" class="btn theme-toggle-btn" data-tooltip="Toggle theme">
-                    <i class="fas fa-moon" id="themeIcon"></i>
-                </button>
-                <a href="/logout" class="btn btn-outline-danger logout-btn">
-                    <i class="fas fa-sign-out-alt me-1"></i> Logout
-                </a>
-            </div>
-        </div>
-
-        <!-- Today's Stats - Compact -->
-        <div class="stats-grid fade-in">
-            <div class="stat-card" data-tooltip="Active work hours">
-                <div class="stat-card-content">
-                    <div class="stat-info">
-                        <h6>Productive</h6>
-                        <h3 id="productiveHours">{{ today_stats.productive_hours|round(1) if today_stats else '5.2' }}h</h3>
-                    </div>
-                    <div class="stat-icon productive">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                </div>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h3>WorkPulse</h3>
+                <small>Employee Dashboard</small>
             </div>
             
-            <div class="stat-card" data-tooltip="Inactive periods">
-                <div class="stat-card-content">
-                    <div class="stat-info">
-                        <h6>Idle</h6>
-                        <h3 id="idleHours">{{ today_stats.idle_hours|round(1) if today_stats else '1.3' }}h</h3>
-                    </div>
-                    <div class="stat-icon idle">
-                        <i class="fas fa-pause"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="stat-card" data-tooltip="Total work time">
-                <div class="stat-card-content">
-                    <div class="stat-info">
-                        <h6>Total</h6>
-                        <h3 id="totalHours">{{ (today_stats.productive_hours + today_stats.idle_hours)|round(1) if today_stats else '6.5' }}h</h3>
-                    </div>
-                    <div class="stat-icon total">
+            <div class="sidebar-nav">
+                <div class="nav-item">
+                    <a href="#dashboard" class="nav-link active" data-page="dashboard">
                         <i class="fas fa-chart-line"></i>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Main Content Area -->
-        <div class="content-area fade-in">
-            <!-- Weekly Activity Chart -->
-            <div class="chart-section">
-                <div class="chart-header">
-                    <h5>
-                        <i class="fas fa-calendar-week"></i>
-                        Weekly Activity
-                    </h5>
-                </div>
-                <div class="chart-container">
-                    <canvas id="weeklyChart"></canvas>
-                </div>
-            </div>
-
-            <!-- Productivity Score -->
-            <div class="productivity-section">
-                <div class="productivity-header">
-                    <h5>
-                        <i class="fas fa-tachometer-alt"></i>
-                        Today's Score
-                    </h5>
+                        <span>Dashboard</span>
+                    </a>
                 </div>
                 
-                <div class="productivity-score-container">
-                    {% set score = today_stats.productivity_score if today_stats else 80 %}
-                    {% if score >= 80 %}
-                        {% set badge_class = "badge-excellent" %}
-                        {% set badge_text = "Excellent" %}
-                    {% elif score >= 60 %}
-                        {% set badge_class = "badge-good" %}
-                        {% set badge_text = "Good" %}
-                    {% else %}
-                        {% set badge_class = "badge-poor" %}
-                        {% set badge_text = "Needs Improvement" %}
-                    {% endif %}
+                <div class="nav-item">
+                    <a href="#ai-assistant" class="nav-link" data-page="ai-assistant">
+                        <i class="fas fa-robot"></i>
+                        <span>AI Assistant</span>
+                    </a>
+                </div>
+                
+                <div class="nav-item">
+                    <a href="#weekly-chart" class="nav-link" data-page="weekly-chart">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Weekly Analytics</span>
+                    </a>
+                </div>
+                
+                <div class="nav-item">
+                    <a href="#manager-info" class="nav-link" data-page="manager-info">
+                        <i class="fas fa-user-tie"></i>
+                        <span>Manager Information</span>
+                    </a>
+                </div>
+                
+                <div class="nav-item">
+                    <a href="#settings" class="nav-link" data-page="settings">
+                        <i class="fas fa-cog"></i>
+                        <span>Settings</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- AI Assistant Quick Access -->
+            <a href="/ai-assistant" class="ai-assistant-link">
+                <i class="fas fa-robot"></i>
+                <span>Open AI Assistant</span>
+            </a>
+
+            <!-- Logout Button -->
+            <a href="/logout" class="logout-btn">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </a>
+            
+            <div class="profile-info">
+                <div class="profile-avatar">
+                    {{ user.name[0]|upper if user else 'U' }}
+                </div>
+                <div class="profile-details">
+                    <h6>{{ user.name if user else 'User' }}</h6>
+                    <small>Employee</small>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Content Header -->
+            <div class="content-header">
+                <div>
+                    <h1 id="pageTitle">Dashboard</h1>
+                    <small id="pageSubtitle" class="text-muted">Real-time productivity tracking</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                   
+                    <button id="themeToggle" class="theme-toggle-btn">
+                        <i class="fas fa-moon" id="themeIcon"></i>
+                    </button>
+                    <a href="/logout" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-sign-out-alt me-1"></i> Logout
+                    </a>
+                </div>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div id="dashboardContent">
+                <!-- Today's Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h6 class="stat-title">Productive Time</h6>
+                            <div class="stat-icon" style="background: rgba(39, 174, 96, 0.1); color: var(--success-color);">
+                                <i class="fas fa-clock"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="productiveTime">
+                            {% if today_stats and today_stats.productive_hours > 0 %}
+                                {{ today_stats.productive_hours|round(1) }}h
+                            {% else %}
+                                0h
+                            {% endif %}
+                        </div>
+                        {% if today_stats and today_stats.productive_hours > 0 %}
+                            <div class="stat-change positive">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>{{ today_stats.productive_minutes|default(0) }} minutes</span>
+                            </div>
+                        {% endif %}
+                    </div>
                     
-                    <span class="productivity-badge {{ badge_class }}">
-                        {{ badge_text }}
-                    </span>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h6 class="stat-title">Idle Time</h6>
+                            <div class="stat-icon" style="background: rgba(243, 156, 18, 0.1); color: var(--warning-color);">
+                                <i class="fas fa-pause"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="idleTime">
+                            {% if today_stats and today_stats.idle_hours > 0 %}
+                                {{ today_stats.idle_hours|round(1) }}h
+                            {% else %}
+                                0h
+                            {% endif %}
+                        </div>
+                        {% if today_stats and today_stats.idle_hours > 0 %}
+                            <div class="stat-change negative">
+                                <i class="fas fa-arrow-up"></i>
+                                <span>{{ today_stats.idle_minutes|default(0) }} minutes</span>
+                            </div>
+                        {% endif %}
+                    </div>
                     
-                    <div class="productivity-score">{{ score|default(80) }}%</div>
-                    
-                    <div class="gauge-container">
-                        <canvas id="productivityGauge"></canvas>
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <h6 class="stat-title">Productivity Score</h6>
+                            <div class="stat-icon" style="background: rgba(52, 152, 219, 0.1); color: var(--secondary-color);">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="productivityScore">
+                            {% if today_stats and today_stats.productivity_score %}
+                                {{ today_stats.productivity_score|default(0) }}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </div>
+                        {% if today_stats and today_stats.score_trend %}
+                            <div class="stat-change {{ 'positive' if today_stats.score_trend == 'up' else 'negative' }}">
+                                <i class="fas fa-arrow-{{ today_stats.score_trend }}"></i>
+                                <span>vs yesterday</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Weekly Activity Chart -->
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div>
+                            <h5 class="chart-title">This Week's Activity</h5>
+                            <p class="chart-subtitle">Daily productive vs idle time comparison</p>
+                        </div>
+                        <div>
+                            <select class="form-select form-select-sm" style="width: auto; font-size: 12px;">
+                                <option>This Week</option>
+                                <option>Last Week</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="weeklyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="data-table">
+                    <div class="table-header">
+                        <h5>Recent Activity</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Activity</th>
+                                    <th>Duration</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activityTable">
+                                {% if recent_activity and recent_activity|length > 0 %}
+                                    {% for activity in recent_activity %}
+                                    <tr>
+                                        <td>{{ activity.time }}</td>
+                                        <td>{{ activity.description }}</td>
+                                        <td>{{ activity.duration }} minutes</td>
+                                        <td>
+                                            <span class="badge bg-{{ 'success' if activity.status == 'productive' else 'warning' }}">
+                                                {{ activity.status }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-4">
+                                            No activity recorded yet
+                                        </td>
+                                    </tr>
+                                {% endif %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Footer Note -->
-        <div class="footer-note fade-in">
-            <small>
-                <i class="fas fa-info-circle me-1"></i>
-                Data updates automatically • Reports sent weekly to manager
-            </small>
-        </div>
+            <!-- AI Assistant Content (Hidden by default) -->
+            <div id="aiAssistantContent" style="display: none;">
+                <div class="settings-section">
+                    <h5 class="settings-title">AI Assistant</h5>
+                    <p class="text-muted mb-4">AI-powered productivity insights and recommendations.</p>
+                    
+                    <div class="alert alert-info mb-4">
+                        <i class="fas fa-info-circle me-2"></i>
+                        The AI Assistant provides intelligent analysis of your productivity data.
+                    </div>
+                    
+                    <div class="d-grid gap-2">
+                        <a href="/ai-assistant" class="btn btn-primary">
+                            <i class="fas fa-robot me-2"></i> Open Full AI Assistant
+                        </a>
+                        <a href="/ai-assistant" class="btn btn-outline-primary">
+                            <i class="fas fa-question-circle me-2"></i> Learn about AI Assistant
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Weekly Analytics Content (Hidden by default) -->
+            <div id="weeklyChartContent" style="display: none;">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <div>
+                            <h5 class="chart-title">Weekly Productivity Analysis</h5>
+                            <p class="chart-subtitle">Detailed breakdown of your weekly performance</p>
+                        </div>
+                    </div>
+                    <div style="height: 400px;">
+                        <canvas id="detailedWeeklyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manager Info Content (Hidden by default) -->
+            <div id="managerInfoContent" style="display: none;">
+                <div class="settings-section">
+                    <h5 class="settings-title">Your Manager</h5>
+                    {% if manager_info %}
+                        <div class="d-flex align-items-start gap-3 mb-4">
+                            <div class="profile-avatar" style="width: 60px; height: 60px; font-size: 24px;">
+                                {{ manager_info.name[0]|upper }}
+                            </div>
+                            <div>
+                                <h6>{{ manager_info.name }}</h6>
+                                <p class="text-muted mb-1">{{ manager_info.position }}</p>
+                                <p class="text-muted mb-1">
+                                    <i class="fas fa-envelope me-1"></i>
+                                    {{ manager_info.email }}
+                                </p>
+                                {% if manager_info.phone %}
+                                <p class="text-muted">
+                                    <i class="fas fa-phone me-1"></i>
+                                    {{ manager_info.phone }}
+                                </p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            {{ manager_info.name }} is responsible for monitoring your productivity and providing feedback.
+                        </div>
+                    {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-user-tie"></i>
+                            <p>No manager assigned yet</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Settings Content (Hidden by default) -->
+            <div id="settingsContent" style="display: none;">
+                <div class="settings-section">
+                    <h5 class="settings-title">Account Settings</h5>
+                    
+                    <!-- User Info -->
+                    <div class="mb-4">
+                        <label class="form-label">User Information</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" placeholder="Name" 
+                                       value="{{ user.name if user else '' }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="email" class="form-control" placeholder="Email" 
+                                       value="{{ user.email if user else '' }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Password Change -->
+                    <div class="mb-4">
+                        <label class="form-label">Change Password</label>
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <input type="password" class="form-control" placeholder="Current Password">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="password" class="form-control" placeholder="New Password">
+                            </div>
+                            <div class="col-md-4">
+                                <input type="password" class="form-control" placeholder="Confirm Password">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary mt-3">Update Password</button>
+                    </div>
+                    
+                    <!-- Manager Info -->
+                    {% if manager_info %}
+                    <div class="mb-4">
+                        <label class="form-label">Manager Information</label>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" 
+                                       value="{{ manager_info.name }}" readonly>
+                            </div>
+                            <div class="col-md-6">
+                                <input type="email" class="form-control" 
+                                       value="{{ manager_info.email }}" readonly>
+                            </div>
+                        </div>
+                        <p class="text-muted mt-2 mb-0">
+                            <small>Assigned since: {{ manager_info.assigned_since if manager_info.assigned_since else 'Not specified' }}</small>
+                        </p>
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Preferences -->
+                    <div class="mb-4">
+                        <label class="form-label">Notification Preferences</label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="dailyReports" checked>
+                            <label class="form-check-label" for="dailyReports">
+                                Daily productivity reports
+                            </label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" id="weeklyReports" checked>
+                            <label class="form-check-label" for="weeklyReports">
+                                Weekly summary emails
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="managerAlerts">
+                            <label class="form-check-label" for="managerAlerts">
+                                Manager notifications
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary">Save Settings</button>
+                </div>
+            </div>
+        </main>
     </div>
 
-    <!-- Tiny Profile Section - Bottom Left Corner -->
-    <div class="profile-section fade-in">
-        <div class="profile-avatar">
-            {{ user.name[0]|upper if user else 'J' }}
-        </div>
-        <div class="profile-info">
-            <h6>{{ user.name.split(' ')[0] if user else 'John' }}</h6>
-            <p>{{ user.email.split('@')[0] if user else 'employee' }}@...</p>
-        </div>
-        <span class="badge bg-primary profile-badge">EMP</span>
-    </div>
-
-    <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
@@ -611,7 +845,6 @@
         const themeToggle = document.getElementById('themeToggle');
         const themeIcon = document.getElementById('themeIcon');
         
-        // Check saved theme
         const savedTheme = localStorage.getItem('theme') || 'light';
         document.documentElement.setAttribute('data-bs-theme', savedTheme);
         updateThemeIcon(savedTheme);
@@ -625,100 +858,85 @@
             localStorage.setItem('theme', newTheme);
             
             // Update charts when theme changes
-            setTimeout(() => {
-                createGaugeChart(score);
-                createWeeklyChart();
-            }, 100);
+            if (window.weeklyChart) {
+                updateChartColors();
+            }
         });
 
         function updateThemeIcon(theme) {
             themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
         }
 
-        // Initialize Charts
-        let productivityGauge, weeklyChart;
-        const score = {{ today_stats.productivity_score|default(80) }};
+        // Page Navigation
+        const navLinks = document.querySelectorAll('.nav-link');
+        const pageContents = {
+            'dashboard': document.getElementById('dashboardContent'),
+            'ai-assistant': document.getElementById('aiAssistantContent'),
+            'weekly-chart': document.getElementById('weeklyChartContent'),
+            'manager-info': document.getElementById('managerInfoContent'),
+            'settings': document.getElementById('settingsContent')
+        };
 
-        function createGaugeChart(score) {
-            const ctx = document.getElementById('productivityGauge');
-            
-            if (productivityGauge) {
-                productivityGauge.destroy();
-            }
-            
-            productivityGauge = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    datasets: [{
-                        data: [score, 100 - score],
-                        backgroundColor: [
-                            getScoreColor(score),
-                            getCurrentTheme() === 'dark' ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
-                        ],
-                        borderWidth: 0,
-                        borderRadius: 3,
-                        cutout: '75%'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: { enabled: false }
-                    },
-                    animation: {
-                        animateRotate: false,
-                        animateScale: true
+        const pageTitles = {
+            'dashboard': { title: 'Dashboard', subtitle: 'Real-time productivity tracking' },
+            'ai-assistant': { title: 'AI Assistant', subtitle: 'Smart productivity insights' },
+            'weekly-chart': { title: 'Weekly Analytics', subtitle: 'Detailed performance analysis' },
+            'manager-info': { title: 'Manager Information', subtitle: 'Your assigned manager details' },
+            'settings': { title: 'Settings', subtitle: 'Account preferences and information' }
+        };
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const page = this.getAttribute('data-page');
+                
+                // Update active state
+                navLinks.forEach(l => l.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show selected page
+                Object.values(pageContents).forEach(content => {
+                    content.style.display = 'none';
+                });
+                
+                if (pageContents[page]) {
+                    pageContents[page].style.display = 'block';
+                    
+                    // Update page title
+                    document.getElementById('pageTitle').textContent = pageTitles[page].title;
+                    document.getElementById('pageSubtitle').textContent = pageTitles[page].subtitle;
+                    
+                    // Load specific content if needed
+                    if (page === 'weekly-chart') {
+                        createDetailedWeeklyChart();
                     }
-                },
-                plugins: [{
-                    id: 'centerText',
-                    beforeDraw: function(chart) {
-                        const width = chart.width;
-                        const height = chart.height;
-                        const ctx = chart.ctx;
-                        
-                        ctx.restore();
-                        ctx.font = "bold 20px 'Segoe UI', Arial, sans-serif";
-                        ctx.fillStyle = getScoreColor(score);
-                        ctx.textBaseline = "middle";
-                        ctx.textAlign = "center";
-                        
-                        const text = score.toFixed(0) + '%';
-                        const textX = Math.round(width / 2);
-                        const textY = Math.round(height / 2);
-                        
-                        ctx.fillText(text, textX, textY);
-                        ctx.save();
-                    }
-                }]
+                }
             });
-        }
+        });
 
-        function getScoreColor(score) {
-            if (score >= 80) return '#28a745';
-            if (score >= 60) return '#ffc107';
-            return '#dc3545';
-        }
-
-        function getCurrentTheme() {
-            return document.documentElement.getAttribute('data-bs-theme');
-        }
-
+        // Initialize Weekly Chart
+        let weeklyChart;
+        
         function createWeeklyChart() {
             const ctx = document.getElementById('weeklyChart');
+            if (!ctx) return;
             
-            // Sample data
+            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            
+            // Get real data from template variables or initialize empty
             const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-            const productiveData = [5.2, 6.1, 4.8, 7.2, 6.5, 2.1, 1.0];
-            const idleData = [1.3, 0.8, 2.1, 0.7, 1.2, 0.5, 0.3];
+            
+            {% if weekly_data %}
+                const productiveData = {{ weekly_data.productive|default([0,0,0,0,0,0,0])|tojson }};
+                const idleData = {{ weekly_data.idle|default([0,0,0,0,0,0,0])|tojson }};
+            {% else %}
+                const productiveData = [0, 0, 0, 0, 0, 0, 0];
+                const idleData = [0, 0, 0, 0, 0, 0, 0];
+            {% endif %}
             
             if (weeklyChart) {
                 weeklyChart.destroy();
             }
-            
-            const isDark = getCurrentTheme() === 'dark';
             
             weeklyChart = new Chart(ctx, {
                 type: 'bar',
@@ -728,22 +946,22 @@
                         {
                             label: 'Productive',
                             data: productiveData,
-                            backgroundColor: isDark ? 'rgba(40, 167, 69, 0.8)' : 'rgba(40, 167, 69, 0.7)',
-                            borderColor: 'rgba(40, 167, 69, 1)',
+                            backgroundColor: isDark ? 'rgba(39, 174, 96, 0.8)' : 'rgba(39, 174, 96, 0.7)',
+                            borderColor: isDark ? 'rgba(39, 174, 96, 1)' : 'rgba(39, 174, 96, 1)',
                             borderWidth: 0,
-                            borderRadius: 3,
-                            barPercentage: 0.5,
-                            categoryPercentage: 0.6
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.7
                         },
                         {
                             label: 'Idle',
                             data: idleData,
-                            backgroundColor: isDark ? 'rgba(255, 193, 7, 0.8)' : 'rgba(255, 193, 7, 0.7)',
-                            borderColor: 'rgba(255, 193, 7, 1)',
+                            backgroundColor: isDark ? 'rgba(243, 156, 18, 0.8)' : 'rgba(243, 156, 18, 0.7)',
+                            borderColor: isDark ? 'rgba(243, 156, 18, 1)' : 'rgba(243, 156, 18, 1)',
                             borderWidth: 0,
-                            borderRadius: 3,
-                            barPercentage: 0.5,
-                            categoryPercentage: 0.6
+                            borderRadius: 4,
+                            barPercentage: 0.6,
+                            categoryPercentage: 0.7
                         }
                     ]
                 },
@@ -755,14 +973,11 @@
                             beginAtZero: true,
                             grid: {
                                 color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
-                                drawBorder: false,
-                                lineWidth: 1
+                                drawBorder: false
                             },
                             ticks: {
-                                color: isDark ? '#f0f0f0' : '#212529',
-                                font: {
-                                    size: 10
-                                },
+                                color: isDark ? '#bdc3c7' : '#7f8c8d',
+                                font: { size: 11 },
                                 padding: 5,
                                 callback: function(value) {
                                     return value + 'h';
@@ -770,14 +985,10 @@
                             }
                         },
                         x: {
-                            grid: {
-                                display: false
-                            },
+                            grid: { display: false },
                             ticks: {
-                                color: isDark ? '#f0f0f0' : '#212529',
-                                font: {
-                                    size: 10
-                                }
+                                color: isDark ? '#bdc3c7' : '#7f8c8d',
+                                font: { size: 11 }
                             }
                         }
                     },
@@ -786,10 +997,20 @@
                             position: 'top',
                             labels: {
                                 usePointStyle: true,
-                                padding: 8,
-                                color: isDark ? '#f0f0f0' : '#212529',
-                                font: {
-                                    size: 10
+                                padding: 10,
+                                color: isDark ? '#ecf0f1' : '#2c3e50',
+                                font: { size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: isDark ? '#2c3e50' : '#ffffff',
+                            titleColor: isDark ? '#ecf0f1' : '#2c3e50',
+                            bodyColor: isDark ? '#ecf0f1' : '#2c3e50',
+                            borderColor: isDark ? '#34495e' : '#ecf0f1',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' hours';
                                 }
                             }
                         }
@@ -802,33 +1023,188 @@
             });
         }
 
-        // Initialize on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            createGaugeChart(score);
-            createWeeklyChart();
-        });
+        // Detailed Weekly Chart for Weekly Analytics page
+        function createDetailedWeeklyChart() {
+            const ctx = document.getElementById('detailedWeeklyChart');
+            if (!ctx) return;
+            
+            const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+            
+            // Same data as main chart
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            
+            {% if weekly_data %}
+                const detailedProductive = {{ weekly_data.productive|default([0,0,0,0,0,0,0])|tojson }};
+                const detailedIdle = {{ weekly_data.idle|default([0,0,0,0,0,0,0])|tojson }};
+            {% else %}
+                const detailedProductive = [0, 0, 0, 0, 0, 0, 0];
+                const detailedIdle = [0, 0, 0, 0, 0, 0, 0];
+            {% endif %}
+            
+            // Create a more detailed chart
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: days,
+                    datasets: [
+                        {
+                            label: 'Productive Hours',
+                            data: detailedProductive,
+                            borderColor: '#27ae60',
+                            backgroundColor: 'rgba(39, 174, 96, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        },
+                        {
+                            label: 'Idle Hours',
+                            data: detailedIdle,
+                            borderColor: '#f39c12',
+                            backgroundColor: 'rgba(243, 156, 18, 0.1)',
+                            borderWidth: 2,
+                            tension: 0.4,
+                            fill: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                color: isDark ? '#bdc3c7' : '#7f8c8d',
+                                font: { size: 11 },
+                                padding: 5,
+                                callback: function(value) {
+                                    return value + 'h';
+                                }
+                            }
+                        },
+                        x: {
+                            grid: { 
+                                color: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.08)'
+                            },
+                            ticks: {
+                                color: isDark ? '#bdc3c7' : '#7f8c8d',
+                                font: { size: 11 }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                color: isDark ? '#ecf0f1' : '#2c3e50',
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: isDark ? '#2c3e50' : '#ffffff',
+                            titleColor: isDark ? '#ecf0f1' : '#2c3e50',
+                            bodyColor: isDark ? '#ecf0f1' : '#2c3e50',
+                            borderColor: isDark ? '#34495e' : '#ecf0f1',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ' + context.parsed.y + ' hours';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-        // Auto-refresh stats every 30 seconds
-        setInterval(() => {
-            fetch('/user/api/dashboard')
+        // Update chart colors when theme changes
+        function updateChartColors() {
+            if (weeklyChart) {
+                weeklyChart.destroy();
+                createWeeklyChart();
+            }
+            
+            // Check if detailed chart exists
+            const detailedCtx = document.getElementById('detailedWeeklyChart');
+            if (detailedCtx && detailedCtx.chart) {
+                detailedCtx.chart.destroy();
+                createDetailedWeeklyChart();
+            }
+        }
+
+        // Auto-refresh data
+        function refreshDashboardData() {
+            fetch('/api/dashboard-data')
                 .then(response => response.json())
                 .then(data => {
                     if (data.today_stats) {
-                        document.getElementById('productiveHours').textContent = 
+                        // Update stats
+                        document.getElementById('productiveTime').textContent = 
                             data.today_stats.productive_hours.toFixed(1) + 'h';
-                        document.getElementById('idleHours').textContent = 
+                        document.getElementById('idleTime').textContent = 
                             data.today_stats.idle_hours.toFixed(1) + 'h';
-                        document.getElementById('totalHours').textContent = 
-                            (data.today_stats.productive_hours + data.today_stats.idle_hours).toFixed(1) + 'h';
+                        document.getElementById('productivityScore').textContent = 
+                            data.today_stats.productivity_score + '%';
                         
-                        // Update gauge if score changed
-                        if (data.today_stats.productivity_score !== score) {
-                            createGaugeChart(data.today_stats.productivity_score);
+                        // Update activity table if needed
+                        if (data.recent_activity) {
+                            updateActivityTable(data.recent_activity);
                         }
                     }
                 })
-                .catch(error => console.error('Error updating stats:', error));
-        }, 30000);
+                .catch(error => console.error('Error refreshing data:', error));
+        }
+
+        function updateActivityTable(activities) {
+            const tableBody = document.getElementById('activityTable');
+            if (!tableBody) return;
+            
+            if (activities.length === 0) {
+                tableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">
+                            No activity recorded yet
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            activities.forEach(activity => {
+                html += `
+                    <tr>
+                        <td>${activity.time}</td>
+                        <td>${activity.description}</td>
+                        <td>${activity.duration} minutes</td>
+                        <td>
+                            <span class="badge bg-${activity.status === 'productive' ? 'success' : 'warning'}">
+                                ${activity.status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            createWeeklyChart();
+            
+            // Auto-refresh every 60 seconds
+            setInterval(refreshDashboardData, 60000);
+            
+            // If no data is available, show appropriate empty states
+            {% if not today_stats %}
+                // Dashboard already shows 0 values for stats
+                console.log('No data available - showing empty states');
+            {% endif %}
+        });
     </script>
 </body>
 </html>

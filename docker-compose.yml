@@ -1,0 +1,25 @@
+# docker-compose.yml - Clean version
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: workpulse-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_PROTOCOL=http
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - WEBHOOK_URL=http://localhost:5678/
+      - N8N_ENCRYPTION_KEY=workpulse-secret-key-2024
+      - N8N_DIAGNOSTICS_ENABLED=true
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=168
+    # Remove volumes for now to test
+    # volumes:
+    #   - ./n8n_data:/home/node/.n8n
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
